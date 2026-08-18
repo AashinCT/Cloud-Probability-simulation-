@@ -1,0 +1,124 @@
+================================================================================
+SERVER RESPONSE TIME ANALYZER - SIMPLE INSTRUCTIONS
+================================================================================
+
+YOUR ISSUE: Python not found in PATH
+
+SOLUTION IN 6 STEPS:
+================================================================================
+
+STEP 1: Install Python
+  1. Go to: https://www.python.org/downloads/
+  2. Click "Download Python" (get latest version)
+  3. Open the downloaded file
+  4. *** IMPORTANT: CHECK ✓ "Add Python to PATH" ***
+  5. Click "Install Now"
+  6. Wait for installation to finish
+  7. Click "Close"
+
+STEP 2: Restart Your Computer
+  1. Save your work
+  2. Click Windows Start > Power > Restart
+  3. Wait for computer to restart
+
+STEP 3: Verify Python Works
+  1. Open Command Prompt (search for "cmd")
+  2. Type: python --version
+  3. Should show: Python 3.x.x
+  4. If yes, Python is ready! ✓
+
+STEP 4: Navigate to Project Folder
+  1. Open File Explorer
+  2. Go to: C:\Users\Aashin C\Cloud-Probability-simulation-\
+  3. Open folder: server-response-time-analyzer
+
+STEP 5: Run the Batch File
+  1. Find file: RUN.bat
+  2. Double-click it
+  3. A window opens - wait 30 seconds
+  4. Don't close the window!
+
+STEP 6: Browser Opens!
+  1. Your default browser automatically opens
+  2. You see the dashboard at: http://localhost:8501
+  3. Done! ✓
+
+================================================================================
+WHAT IF SOMETHING GOES WRONG?
+================================================================================
+
+If RUN.bat won't work:
+  1. Right-click in the folder (empty space)
+  2. Select "Open PowerShell window here"
+  3. Copy and paste this:
+     Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser -Force
+  4. Press Enter
+  5. Then copy and paste this:
+     .\RUN.ps1
+  6. Press Enter
+
+If "Python not found" error:
+  1. Make sure you installed Python
+  2. Make sure you CHECKED "Add Python to PATH"
+  3. Make sure you RESTARTED your computer
+  4. Try again
+
+If port already in use error:
+  1. Edit RUN.bat file
+  2. Find line: streamlit run app.py
+  3. Change to: streamlit run app.py --server.port 8502
+  4. Save
+  5. Run again
+
+================================================================================
+FILES IN THE FOLDER
+================================================================================
+
+MAIN FILES TO USE:
+  RUN.bat              ← Double-click this to start (EASIEST)
+  RUN.ps1              ← PowerShell version
+  app.py               ← The main application
+  
+GUIDES TO READ:
+  START_HERE.md        ← Read this first
+  QUICK_START.md       ← Quick 5-minute guide
+  README.md            ← Complete documentation
+  
+SETUP HELP:
+  PYTHON_SETUP_GUIDE.md ← If you have Python issues
+
+================================================================================
+ONCE THE APP IS RUNNING
+================================================================================
+
+1. Look at the left sidebar
+2. Keep Lambda = 1.0 (default is fine)
+3. Keep Requests = 5000 (default is fine)
+4. Click "Generate New Data" button (blue)
+5. Wait 2 seconds
+6. Click the other tabs at the top to explore!
+
+Tabs:
+  📈 Overview   - See statistics
+  📊 Visuals    - See charts
+  🎯 Probability - Learn math
+  📋 SLA        - Check compliance
+  ℹ️  About      - Read docs
+
+================================================================================
+SUMMARY
+================================================================================
+
+THREE SIMPLE STEPS:
+
+1. Install Python from python.org
+   - Check ✓ "Add Python to PATH"
+   - Restart your computer
+
+2. Double-click RUN.bat
+
+3. Browser opens with the app!
+
+That's it! Everything else is automatic.
+
+================================================================================
