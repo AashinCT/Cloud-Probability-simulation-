@@ -12,14 +12,7 @@
 <body>
   <div class="app-shell">
     <aside class="sidebar">
-      <div class="brand">
-        <div class="brand-icon">▣</div>
-        <div>
-          <div class="brand-name">Response Monitor</div>
-          <div class="brand-sub">Exponential Analytics</div>
-        </div>
-      </div>
-
+      <div class="brand"><div class="brand-icon">▣</div><div><div class="brand-name">Response Monitor</div><div class="brand-sub">Exponential Analytics</div></div></div>
       <nav class="nav">
         <button class="nav-item active">⌂ <span>Dashboard</span></button>
         <button class="nav-item">◫ <span>Live Data</span></button>
@@ -28,143 +21,57 @@
         <button class="nav-item">◉ <span>SLA Analysis</span></button>
         <button class="nav-item">⚙ <span>Settings</span></button>
       </nav>
-
-      <div class="server-card">
-        <div class="server-dot"></div>
-        <div>
-          <strong>Real Server</strong>
-          <small>FastAPI + Python<br>Ubuntu Server</small>
-        </div>
-      </div>
+      <div class="server-card"><div class="server-dot"></div><div><strong>Real Server</strong><small>FastAPI + Python<br>Ubuntu Server</small></div></div>
     </aside>
 
     <main class="main">
       <header class="topbar">
-        <div>
-          <h1>Server Response Time Monitor</h1>
-          <p>Real-time Analysis <span>•</span> Exponential Distribution <span>•</span> SLA Monitoring</p>
-        </div>
-        <div class="top-status">
-          <span class="online-dot"></span>
-          <span id="serverStatus">Server Online</span>
-          <span class="divider"></span>
-          <span id="clock">--:--:--</span>
-          <button id="refreshBtn" class="refresh">↻</button>
-        </div>
+        <div><h1>Server Response Time Monitor</h1><p>Real-time Analysis <span>•</span> Exponential Distribution <span>•</span> SLA Monitoring</p></div>
+        <div class="top-status"><span class="online-dot"></span><span id="serverStatus">Server Online</span><span class="divider"></span><span id="clock">--:--:--</span><button id="refreshBtn" class="refresh">↻</button></div>
       </header>
 
       <section class="metrics-grid">
-        <div class="metric-card">
-          <div class="metric-icon">⇄</div>
-          <div class="metric-label">Total Requests</div>
-          <div class="metric-value" id="requests">--</div>
-          <div class="metric-note">current dataset</div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-icon">◷</div>
-          <div class="metric-label">Mean Response Time</div>
-          <div class="metric-value" id="mean">--</div>
-          <div class="metric-note" id="meanSeconds">--</div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-icon">λ</div>
-          <div class="metric-label">Lambda (λ)</div>
-          <div class="metric-value" id="lambda">--</div>
-          <div class="metric-note">estimated service-rate parameter</div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-icon">Σ</div>
-          <div class="metric-label">Variance</div>
-          <div class="metric-value compact" id="variance">--</div>
-          <div class="metric-note">s²</div>
-        </div>
-
-        <div class="metric-card">
-          <div class="metric-icon">◷</div>
-          <div class="metric-label">P95 Response Time</div>
-          <div class="metric-value" id="p95">--</div>
-          <div class="metric-note">95th percentile</div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-icon">◷</div>
-          <div class="metric-label">P99 Response Time</div>
-          <div class="metric-value" id="p99">--</div>
-          <div class="metric-note">99th percentile</div>
-        </div>
-        <div class="metric-card warning">
-          <div class="metric-icon">!</div>
-          <div class="metric-label">Delay Probability</div>
-          <div class="metric-value" id="delayProbability">--</div>
-          <div class="metric-note" id="delayNote">P(X &gt; 0.1s)</div>
-        </div>
-        <div class="metric-card success">
-          <div class="metric-icon">✓</div>
-          <div class="metric-label">SLA Compliance</div>
-          <div class="metric-value" id="slaCompliance">--</div>
-          <div class="metric-note" id="slaNote">≤ 100 ms</div>
-        </div>
+        <div class="metric-card"><div class="metric-icon">⇄</div><div class="metric-label">Total Requests</div><div class="metric-value" id="requests">--</div><div class="metric-note">current dataset</div></div>
+        <div class="metric-card"><div class="metric-icon">◷</div><div class="metric-label">Mean Response Time</div><div class="metric-value" id="mean">--</div><div class="metric-note" id="meanSeconds">--</div></div>
+        <div class="metric-card"><div class="metric-icon">λ</div><div class="metric-label">Lambda (λ)</div><div class="metric-value" id="lambda">--</div><div class="metric-note">estimated service-rate parameter</div></div>
+        <div class="metric-card"><div class="metric-icon">Σ</div><div class="metric-label">Variance</div><div class="metric-value compact" id="variance">--</div><div class="metric-note">s²</div></div>
+        <div class="metric-card"><div class="metric-icon">◷</div><div class="metric-label">P95 Response Time</div><div class="metric-value" id="p95">--</div><div class="metric-note">95th percentile</div></div>
+        <div class="metric-card"><div class="metric-icon">◷</div><div class="metric-label">P99 Response Time</div><div class="metric-value" id="p99">--</div><div class="metric-note">99th percentile</div></div>
+        <div class="metric-card warning"><div class="metric-icon">!</div><div class="metric-label">Delay Probability</div><div class="metric-value" id="delayProbability">--</div><div class="metric-note" id="delayNote">P(X &gt; 0.1s)</div></div>
+        <div class="metric-card success"><div class="metric-icon">✓</div><div class="metric-label">SLA Compliance</div><div class="metric-value" id="slaCompliance">--</div><div class="metric-note" id="slaNote">≤ 100 ms</div></div>
       </section>
 
       <section class="charts-grid">
-        <div class="panel large">
-          <div class="panel-head">
-            <div>
-              <h2>Response Time History</h2>
-              <p>Observed response time for each request</p>
-            </div>
-            <span class="legend"><i></i> Response Time</span>
-          </div>
-          <div class="chart-wrap"><canvas id="historyChart"></canvas></div>
-        </div>
+        <div class="panel large"><div class="panel-head"><div><h2>Response Time History</h2><p>Observed response time for each request</p></div><span class="legend"><i></i> Response Time</span></div><div class="chart-wrap"><canvas id="historyChart"></canvas></div></div>
+        <div class="panel"><div class="panel-head"><div><h2>Exponential Distribution</h2><p>Observed data with fitted model</p></div></div><div class="chart-wrap"><canvas id="distributionChart"></canvas></div></div>
+      </section>
 
-        <div class="panel">
-          <div class="panel-head">
-            <div>
-              <h2>Exponential Distribution</h2>
-              <p>Observed data with fitted model</p>
-            </div>
+      <section class="server-metrics-grid">
+        <div class="panel server-overview">
+          <div class="panel-head"><div><h2>Live Server Metrics</h2><p>Collected directly from the Ubuntu FastAPI server</p></div><span class="live-badge">● Live</span></div>
+          <div class="server-stat-cards">
+            <div class="server-stat"><span>CPU Usage</span><strong id="cpuUsage">--</strong></div>
+            <div class="server-stat"><span>RAM Usage</span><strong id="ramUsage">--</strong></div>
+            <div class="server-stat"><span>HTTP Status</span><strong id="httpStatus">--</strong></div>
+            <div class="server-stat"><span>Latest Response</span><strong id="latestResponse">--</strong></div>
           </div>
-          <div class="chart-wrap"><canvas id="distributionChart"></canvas></div>
+          <div class="server-meta">Last measurement: <span id="latestTimestamp">--</span></div>
         </div>
+        <div class="panel"><div class="panel-head"><div><h2>Response Time vs CPU</h2><p>Each point is a real collected request</p></div></div><div class="chart-wrap small"><canvas id="cpuChart"></canvas></div></div>
+        <div class="panel"><div class="panel-head"><div><h2>Response Time vs RAM</h2><p>Observed response time and memory usage</p></div></div><div class="chart-wrap small"><canvas id="ramChart"></canvas></div></div>
       </section>
 
       <section class="bottom-grid">
-        <div class="panel">
-          <div class="panel-head"><h2>Key Statistics</h2></div>
-          <div class="stats-list">
-            <div><span>Requests</span><strong id="statRequests">--</strong></div>
-            <div><span>Mean Response Time</span><strong id="statMean">--</strong></div>
-            <div><span>Variance</span><strong id="statVariance">--</strong></div>
-            <div><span>Lambda (λ)</span><strong id="statLambda">--</strong></div>
-            <div><span>P95</span><strong id="statP95">--</strong></div>
-            <div><span>P99</span><strong id="statP99">--</strong></div>
-            <div><span>Delay Probability (&gt;100ms)</span><strong id="statDelay">--</strong></div>
-            <div><span>SLA Compliance (≤100ms)</span><strong id="statSla">--</strong></div>
-          </div>
-        </div>
-
-        <div class="panel">
-          <div class="panel-head"><h2>Response Time Distribution</h2></div>
-          <div class="chart-wrap small"><canvas id="distributionBars"></canvas></div>
-        </div>
-
-        <div class="panel">
-          <div class="panel-head">
-            <h2>Live Feed</h2>
-            <span class="live-badge">● Live</span>
-          </div>
-          <div class="feed-head"><span>#</span><span>Response Time</span><span>Status</span></div>
-          <div id="liveFeed" class="live-feed"></div>
-        </div>
+        <div class="panel"><div class="panel-head"><h2>Key Statistics</h2></div><div class="stats-list">
+          <div><span>Requests</span><strong id="statRequests">--</strong></div><div><span>Mean Response Time</span><strong id="statMean">--</strong></div><div><span>Variance</span><strong id="statVariance">--</strong></div><div><span>Lambda (λ)</span><strong id="statLambda">--</strong></div><div><span>P95</span><strong id="statP95">--</strong></div><div><span>P99</span><strong id="statP99">--</strong></div><div><span>Delay Probability (&gt;100ms)</span><strong id="statDelay">--</strong></div><div><span>SLA Compliance (≤100ms)</span><strong id="statSla">--</strong></div>
+        </div></div>
+        <div class="panel"><div class="panel-head"><h2>Response Time Distribution</h2></div><div class="chart-wrap small"><canvas id="distributionBars"></canvas></div></div>
+        <div class="panel"><div class="panel-head"><h2>Live Feed</h2><span class="live-badge">● Live</span></div><div class="feed-head"><span>#</span><span>Response Time</span><span>Status</span></div><div id="liveFeed" class="live-feed"></div></div>
       </section>
 
-      <footer>
-        <span>☁ Server Response Time Modeling Using Exponential Distribution</span>
-        <span>FastAPI · Python · Ubuntu · Real-time</span>
-      </footer>
+      <footer><span>☁ Server Response Time Modeling Using Exponential Distribution</span><span>FastAPI · Python · Ubuntu · Real-time</span></footer>
     </main>
   </div>
-
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="script.js"></script>
 </body>
