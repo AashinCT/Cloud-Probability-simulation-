@@ -111,11 +111,11 @@ async function loadDashboard() {
       fetch(API_BASE + "/api/response-times"),
       fetch(API_BASE + "/api/server-metrics")
     ]);
-    if (!metricsRes.ok || !timesRes.ok || !serverRes.ok) throw new Error("API unavailable");
+    if (!metricsRes.ok || !timesRes.ok || !serverRes.ok || !slaRes.ok) throw new Error("API unavailable");
 
     const metrics = await metricsRes.json();
     const times = (await timesRes.json()).response_times || [];
-    const records = (await serverRes.json()).metrics || [];
+    const records = (await serverRes.json()).metrics || [];\n    const sla = await slaRes.json();
 
     const delayProbability = exponentialDelayProbability(metrics.lambda, SLA_LIMIT);
     const empiricalSla = times.length ? times.filter(v => v <= SLA_LIMIT).length / times.length : 0;
@@ -152,7 +152,7 @@ async function loadDashboard() {
       $("latestTimestamp").textContent = new Date(latest.timestamp).toLocaleString();
     }
 
-    $("serverStatus").textContent = "Server Online";
+    // SLA Analysis\n    $("slaThreshold").textContent = Number(sla.threshold_ms).toFixed(0) + " ms";\n    $("slaTarget").textContent = Number(sla.target_percent).toFixed(1) + "%";\n    $("slaActualCompliance").textContent = Number(sla.actual_compliance_percent).toFixed(1) + "%";\n    $("slaViolations").textContent = Number(sla.violating_requests).toLocaleString();\n    $("slaModelCompliance").textContent = Number(sla.model_compliance_percent).toFixed(1) + "%";\n    $("slaModelViolation").textContent = Number(sla.model_violation_percent).toFixed(1) + "%";\n    $("slaTotalRequests").textContent = Number(sla.total_requests).toLocaleString();\n    $("slaCompliantRequests").textContent = Number(sla.compliant_requests).toLocaleString();\n    $("slaViolatingRequests").textContent = Number(sla.violating_requests).toLocaleString();\n    $("slaLambda").textContent = Number(sla.lambda).toFixed(4) + " /s";\n    const slaBadge = $("slaStatusBadge");\n    slaBadge.textContent = sla.sla_status;\n    slaBadge.className = "sla-status " + (sla.sla_status === "PASS" ? "pass" : (sla.sla_status === "NO DATA" ? "nodata" : "violation"));\n\n    $("serverStatus").textContent = "Server Online";
     $("serverStatus").style.color = "#55e0bd";
 
     renderCharts(times);
@@ -174,3 +174,4 @@ async function loadDashboard() {
 $("refreshBtn").addEventListener("click", loadDashboard);
 loadDashboard();
 setInterval(loadDashboard, 10000);
+\n// Sidebar navigation\n$("slaNav").addEventListener("click", () => {\n  $("slaAnalysis").scrollIntoView({ behavior: "smooth", block: "start" });\n});\n
