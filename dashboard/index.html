@@ -82,9 +82,21 @@
             <div><span>Violating Requests</span><strong id="slaViolatingRequests">--</strong></div>
             <div><span>Lambda (λ)</span><strong id="slaLambda">--</strong></div>
           </div>
+          <div class="sla-visual-grid">
+            <div class="sla-chart-card">
+              <div class="panel-head"><div><h2>Actual vs Model Compliance</h2><p>Observed SLA performance compared with exponential-model prediction</p></div></div>
+              <div class="chart-wrap small"><canvas id="slaComparisonChart"></canvas></div>
+            </div>
+            <div class="sla-result-card" id="slaResultCard">
+              <div class="result-icon" id="slaResultIcon">✓</div>
+              <div class="result-label">SLA Result</div>
+              <strong id="slaResultText">--</strong>
+              <p id="slaResultMessage">Waiting for live SLA data...</p>
+            </div>
+          </div>
           <div class="sla-explanation">
             <strong>How to read this:</strong>
-            <span>The actual compliance is calculated from measured server response times. The model compliance is calculated from the fitted exponential distribution. The difference helps evaluate how well the statistical model represents the observed SLA behaviour.</span>
+            <span>The actual compliance is calculated from measured server response times. The model compliance is calculated from the fitted exponential distribution. Comparing both values shows how closely the statistical model represents the observed SLA behaviour.</span>
           </div>
         </div>
       </section>
