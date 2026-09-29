@@ -164,7 +164,12 @@ async function loadDashboard() {
     $("slaTotalRequests").textContent = Number(sla.total_requests).toLocaleString();
     $("slaCompliantRequests").textContent = Number(sla.compliant_requests).toLocaleString();
     $("slaViolatingRequests").textContent = Number(sla.violating_requests).toLocaleString();
-    $("slaLambda").textContent = Number(sla.lambda).toFixed(4) + " /s";\n    const slaBadge = $("slaStatusBadge");\n    slaBadge.textContent = sla.sla_status;\n    slaBadge.className = "sla-status " + (sla.sla_status === "PASS" ? "pass" : (sla.sla_status === "NO DATA" ? "nodata" : "violation"));\n\n    $("serverStatus").textContent = "Server Online";
+    $("slaLambda").textContent = Number(sla.lambda).toFixed(4) + " /s";
+    const slaBadge = $("slaStatusBadge");
+    slaBadge.textContent = sla.sla_status;
+    slaBadge.className = "sla-status " + (sla.sla_status === "PASS" ? "pass" : (sla.sla_status === "NO DATA" ? "nodata" : "violation"));
+
+    $("serverStatus").textContent = "Server Online";
     $("serverStatus").style.color = "#55e0bd";
 
     renderCharts(times);
@@ -186,4 +191,8 @@ async function loadDashboard() {
 $("refreshBtn").addEventListener("click", loadDashboard);
 loadDashboard();
 setInterval(loadDashboard, 10000);
-\n// Sidebar navigation\n$("slaNav").addEventListener("click", () => {\n  $("slaAnalysis").scrollIntoView({ behavior: "smooth", block: "start" });\n});\n
+
+// Sidebar navigation
+$("slaNav").addEventListener("click", () => {
+  $("slaAnalysis").scrollIntoView({ behavior: "smooth", block: "start" });
+});
