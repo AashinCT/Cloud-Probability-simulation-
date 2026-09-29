@@ -18,7 +18,7 @@
         <button class="nav-item">◫ <span>Live Data</span></button>
         <button class="nav-item">⌁ <span>Statistics</span></button>
         <button class="nav-item">▥ <span>Charts</span></button>
-        <button class="nav-item">◉ <span>SLA Analysis</span></button>
+        <button class="nav-item" id="slaNav">◉ <span>SLA Analysis</span></button>
         <button class="nav-item">⚙ <span>Settings</span></button>
       </nav>
       <div class="server-card"><div class="server-dot"></div><div><strong>Real Server</strong><small>FastAPI + Python<br>Ubuntu Server</small></div></div>
@@ -59,6 +59,34 @@
         </div>
         <div class="panel"><div class="panel-head"><div><h2>Response Time vs CPU</h2><p>Each point is a real collected request</p></div></div><div class="chart-wrap small"><canvas id="cpuChart"></canvas></div></div>
         <div class="panel"><div class="panel-head"><div><h2>Response Time vs RAM</h2><p>Observed response time and memory usage</p></div></div><div class="chart-wrap small"><canvas id="ramChart"></canvas></div></div>
+      </section>
+
+
+      <section id="slaAnalysis" class="sla-section">
+        <div class="panel sla-panel">
+          <div class="panel-head">
+            <div><h2>SLA Analysis</h2><p>Observed performance compared with the exponential response-time model</p></div>
+            <span id="slaStatusBadge" class="sla-status">--</span>
+          </div>
+          <div class="sla-grid">
+            <div class="sla-card"><span>Response Threshold</span><strong id="slaThreshold">--</strong><small>Maximum allowed response time</small></div>
+            <div class="sla-card"><span>SLA Target</span><strong id="slaTarget">--</strong><small>Required compliance level</small></div>
+            <div class="sla-card"><span>Actual Compliance</span><strong id="slaActualCompliance">--</strong><small>Measured from real requests</small></div>
+            <div class="sla-card"><span>Actual Violations</span><strong id="slaViolations">--</strong><small>Requests above threshold</small></div>
+            <div class="sla-card"><span>Model Compliance</span><strong id="slaModelCompliance">--</strong><small>Predicted by exponential model</small></div>
+            <div class="sla-card"><span>Model Violation</span><strong id="slaModelViolation">--</strong><small>P(X &gt; threshold)</small></div>
+          </div>
+          <div class="sla-details">
+            <div><span>Total Requests</span><strong id="slaTotalRequests">--</strong></div>
+            <div><span>Compliant Requests</span><strong id="slaCompliantRequests">--</strong></div>
+            <div><span>Violating Requests</span><strong id="slaViolatingRequests">--</strong></div>
+            <div><span>Lambda (λ)</span><strong id="slaLambda">--</strong></div>
+          </div>
+          <div class="sla-explanation">
+            <strong>How to read this:</strong>
+            <span>The actual compliance is calculated from measured server response times. The model compliance is calculated from the fitted exponential distribution. The difference helps evaluate how well the statistical model represents the observed SLA behaviour.</span>
+          </div>
+        </div>
       </section>
 
       <section class="bottom-grid">
