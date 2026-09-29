@@ -1,6 +1,6 @@
 const API_BASE = "http://127.0.0.1:8000";
 const SLA_LIMIT = 0.100;
-let historyChart, distributionChart, distributionBars, cpuChart, ramChart;
+let historyChart, distributionChart, distributionBars, cpuChart, ramChart, slaComparisonChart;
 
 const $ = id => document.getElementById(id);
 const ms = seconds => (seconds * 1000).toFixed(2) + " ms";
@@ -168,6 +168,62 @@ async function loadDashboard() {
     const slaBadge = $("slaStatusBadge");
     slaBadge.textContent = sla.sla_status;
     slaBadge.className = "sla-status " + (sla.sla_status === "PASS" ? "pass" : (sla.sla_status === "NO DATA" ? "nodata" : "violation"));
+
+    
+    if (slaComparisonChart) slaComparisonChart.destroy();
+    slaComparisonChart = new Chart($("slaComparisonChart"), {
+      type:"bar",
+      data:{
+        labels:["Compliance","Violation"],
+        datasets:[
+          {
+            label:"Actual",
+            data:[Number(sla.actual_compliance_percent),Number(sla.actual_violation_percent)],
+            backgroundColor:"#28d8c3",
+            borderRadius:5
+          },
+          {
+            label:"Exponential Model",
+            data:[Number(sla.model_compliance_percent),Number(sla.model_violation_percent)],
+            backgroundColor:"#b35cff",
+            borderRadius:5
+          }
+        ]
+      },
+      options:{
+        responsive:true,
+        maintainAspectRatio:false,
+        scales:{
+          x:{ticks:{color:"#9fb7da",font:{size:9}},grid:{color:"#173252"}},
+          y:{min:0,max:100,ticks:{color:"#6f89ad",font:{size:9},callback:value=>value+"%"},grid:{color:"#173252"},title:{display:true,text:"Percentage",color:"#7894b9",font:{size:9}}}
+        },
+        plugins:{
+          legend:{labels:{color:"#9fb7da",font:{size:10}}},
+          tooltip:{callbacks:{label:context=>context.dataset.label+": "+Number(context.raw).toFixed(2)+"%"}}
+        }
+      }
+    });
+
+    const resultCard = $("slaResultCard");
+    const resultText = $("slaResultText");
+    const resultMessage = $("slaResultMessage");
+    const resultIcon = $("slaResultIcon");
+    if (sla.sla_status === "PASS") {
+      resultCard.className = "sla-result-card pass";
+      resultIcon.textContent = "✓";
+      resultText.textContent = "PASS";
+      resultMessage.textContent = "Observed compliance meets or exceeds the configured SLA target.";
+    } else if (sla.sla_status === "VIOLATION") {
+      resultCard.className = "sla-result-card violation";
+      resultIcon.textContent = "!";
+      resultText.textContent = "VIOLATION";
+      resultMessage.textContent = "Observed compliance is below the configured SLA target.";
+    } else {
+      resultCard.className = "sla-result-card nodata";
+      resultIcon.textContent = "—";
+      resultText.textContent = "NO DATA";
+      resultMessage.textContent = "No response-time data is available for SLA evaluation.";
+    }
 
     $("serverStatus").textContent = "Server Online";
     $("serverStatus").style.color = "#55e0bd";
