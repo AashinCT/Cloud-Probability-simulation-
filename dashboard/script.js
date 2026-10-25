@@ -268,7 +268,7 @@ function parseCSV(text) {
       else field+=c;
     } else if(c==='"') quoted=true;
     else if(c===","){row.push(field);field="";}
-    else if(c==="\\n"){row.push(field.replace(/\\r$/,""));rows.push(row);row=[];field="";}
+    else if(c==="\n"){row.push(field.replace(/\\r$/,""));rows.push(row);row=[];field="";}
     else field+=c;
   }
   if(field.length || row.length){row.push(field.replace(/\\r$/,""));rows.push(row);}
