@@ -41,3 +41,6 @@ button{font:inherit}a{text-decoration:none}.app-shell{display:flex;min-height:10
 @media(max-width:520px){.dataset-controls{grid-template-columns:1fr}.dataset-control:first-child{grid-column:auto}.dataset-badge{display:none}}
 
 .dataset-chart-note{font-size:10px;color:#8ea7ca;line-height:1.5;margin:8px 0 0;min-height:15px}
+
+/* Dataset SLA analysis panel */
+.dataset-sla-panel{margin-top:0}.dataset-sla-panel .sla-details{margin-bottom:0}.dataset-sla-panel .sla-explanation{line-height:1.7}
