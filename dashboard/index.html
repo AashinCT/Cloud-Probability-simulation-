@@ -64,6 +64,14 @@
             <div class="panel"><div class="panel-head"><div><h2>Empirical vs Exponential Model</h2><p>Model fit is illustrative; assess goodness-of-fit before relying on it.</p></div></div><div class="chart-wrap"><canvas id="datasetModelChart"></canvas></div></div>
             <div class="panel"><div class="panel-head"><div><h2>Dataset Summary</h2></div></div><div class="stats-list dataset-stats"><div><span>Minimum</span><strong id="dsMin">--</strong></div><div><span>Maximum</span><strong id="dsMax">--</strong></div><div><span>Standard deviation</span><strong id="dsStd">--</strong></div><div><span>Median</span><strong id="dsMedian">--</strong></div><div><span>Missing / non-numeric</span><strong id="dsInvalid">--</strong></div><div><span>Values above threshold</span><strong id="dsViolations">--</strong></div></div></div>
           </section>
+          <section class="charts-grid dataset-charts-grid">
+            <div class="panel"><div class="panel-head"><div><h2>Response Time vs CPU</h2><p>Uses CPU/response columns when present in the CSV.</p></div></div><div class="chart-wrap small"><canvas id="datasetCpuChart"></canvas></div><p class="dataset-chart-note" id="datasetCpuNote"></p></div>
+            <div class="panel"><div class="panel-head"><div><h2>Response Time vs RAM</h2><p>Uses RAM/response columns when present in the CSV.</p></div></div><div class="chart-wrap small"><canvas id="datasetRamChart"></canvas></div><p class="dataset-chart-note" id="datasetRamNote"></p></div>
+          </section>
+          <section class="charts-grid dataset-charts-grid">
+            <div class="panel"><div class="panel-head"><div><h2>Actual vs Model SLA Compliance</h2><p>Observed compliance compared with exponential-model estimate.</p></div></div><div class="chart-wrap small"><canvas id="datasetSlaChart"></canvas></div></div>
+            <div class="panel"><div class="panel-head"><div><h2>Response Time Distribution</h2><p>Request counts per latency range, like the live dashboard.</p></div></div><div class="chart-wrap small"><canvas id="datasetDistributionBars"></canvas></div></div>
+          </section>
         </div>
       </section>
 

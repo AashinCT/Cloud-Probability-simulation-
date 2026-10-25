@@ -256,7 +256,7 @@ $("slaNav").addEventListener("click", () => {
 
 // Dataset Analysis mode. All uploaded-file processing stays in this browser and never
 // mutates the live API data or live-monitoring charts.
-let datasetRows = [], datasetHeaders = [], datasetHistoryChart, datasetHistogramChart, datasetModelChart;
+let datasetRows = [], datasetHeaders = [], datasetHistoryChart, datasetHistogramChart, datasetModelChart, datasetCpuChart, datasetRamChart, datasetSlaChart, datasetDistributionBars;
 const datasetState = {active:false};
 function parseCSV(text) {
   const rows=[]; let row=[], field="", quoted=false;
@@ -275,7 +275,7 @@ function parseCSV(text) {
   return rows.filter(r=>r.some(v=>String(v).trim()!==""));
 }
 function fmtNumber(n){return Number(n).toLocaleString(undefined,{maximumFractionDigits:6});}
-function destroyDatasetCharts(){[datasetHistoryChart,datasetHistogramChart,datasetModelChart].forEach(c=>{if(c)c.destroy();});datasetHistoryChart=datasetHistogramChart=datasetModelChart=null;}
+function destroyDatasetCharts(){[datasetHistoryChart,datasetHistogramChart,datasetModelChart,datasetCpuChart,datasetRamChart,datasetSlaChart,datasetDistributionBars].forEach(c=>{if(c)c.destroy();});datasetHistoryChart=datasetHistogramChart=datasetModelChart=datasetCpuChart=datasetRamChart=datasetSlaChart=datasetDistributionBars=null;}
 function showMode(mode){
   datasetState.active=mode==="dataset";
   $("liveDashboard").hidden=datasetState.active;
@@ -342,11 +342,34 @@ function analyzeDataset(){
   const valsMs=values.map(v=>v*1000), max=Math.max(...valsMs,thresholdMs), min=Math.min(...valsMs), bins=12, step=(max-min||1)/bins, counts=Array(bins).fill(0);
   valsMs.forEach(v=>counts[Math.min(bins-1,Math.floor((v-min)/step))]++);
   destroyDatasetCharts();
+  const chartText="#9fb7da", grid="#173252";
   datasetHistoryChart=new Chart($("datasetHistoryChart"),{type:"line",data:{labels:valsMs.map((_,i)=>i+1),datasets:[{label:col+" (ms)",data:valsMs,borderColor:"#2c80ff",backgroundColor:"rgba(44,128,255,.12)",fill:true,tension:.2,pointRadius:1}]},options:baseChartOptions("Milliseconds")});
   datasetHistogramChart=new Chart($("datasetHistogramChart"),{type:"bar",data:{labels:counts.map((_,i)=>(min+i*step).toFixed(2)+"–"+(min+(i+1)*step).toFixed(2)),datasets:[{label:"Rows",data:counts,backgroundColor:"#28d8c3",borderRadius:3}]},options:baseChartOptions("Rows")});
-  const xmax=Math.max(sorted[n-1],threshold), points=Array.from({length:40},(_,i)=>i*xmax/39), observedBins=counts;
+  datasetDistributionBars=new Chart($("datasetDistributionBars"),{type:"bar",data:{labels:counts.map((_,i)=>(min+i*step).toFixed(1)+"–"+(min+(i+1)*step).toFixed(1)+" ms"),datasets:[{label:"Requests",data:counts,backgroundColor:"#287cff",borderRadius:3}]},options:baseChartOptions("Requests")});
+  const xmax=Math.max(sorted[n-1],threshold), points=Array.from({length:40},(_,i)=>i*xmax/39);
   datasetModelChart=new Chart($("datasetModelChart"),{type:"line",data:{labels:points.map(x=>(x*1000).toFixed(2)),datasets:[
-    {label:"Exponential density (scaled)",data:Number.isFinite(lambda)?points.map(x=>lambda*Math.exp(-lambda*x)*n*(xmax/39)):[],borderColor:"#b35cff",pointRadius:0,borderWidth:2,tension:.2},
-    {label:"Threshold",data:points.map(()=>null),borderColor:"#ffad3d",pointRadius:0}
+    {label:"Exponential density (scaled)",data:Number.isFinite(lambda)?points.map(x=>lambda*Math.exp(-lambda*x)*n*(xmax/39)):[],borderColor:"#b35cff",pointRadius:0,borderWidth:2,tension:.2}
   ]},options:{...baseChartOptions("Scaled density"),scales:{...baseChartOptions("Scaled density").scales,x:{...baseChartOptions("Scaled density").scales.x,title:{display:true,text:"Value (ms)",color:"#7894b9",font:{size:9}}}}}});
+  // Match the live dashboard's response-time-vs-CPU and response-time-vs-RAM scatter charts when those columns exist.
+  const normalized=h=>h.toLowerCase().replace(/[^a-z0-9]/g,"");
+  const findColumn=patterns=>datasetHeaders.find(h=>patterns.some(p=>p.test(normalized(h))));
+  const cpuCol=findColumn([/^cpu(percent|usage|utilization)?$/, /^cpupercent$/]);
+  const ramCol=findColumn([/^ram(percent|usage)?$/, /^memory(percent|usage|utilization)?$/, /^rampercent$/, /^memorypercent$/]);
+  const responseCol=datasetHeaders.find(h=>/response.?time|latency|duration|elapsed/i.test(h))||col;
+  const getNumbers=h=>datasetRows.map(r=>{const s=String(r[h]??"").replace(/,/g,"").trim();return s===""?NaN:Number(s);});
+  const responseRaw=getNumbers(responseCol);
+  const responseMs=responseRaw.map(v=>responseCol===col?v*(unit==="s"?1000:1):v*(/(_s|seconds?|time.?s)$/i.test(responseCol)?1000:1));
+  const scatter=(canvasId,noteId,metricCol,label,color)=>{
+    const metric=metricCol?getNumbers(metricCol):[];
+    const pts=metric.map((v,i)=>({x:v,y:responseMs[i]})).filter(p=>Number.isFinite(p.x)&&Number.isFinite(p.y));
+    $(noteId).textContent=pts.length?("Using "+metricCol+" and "+responseCol+"."):"No suitable "+label+" column found in this CSV; add one to enable this graph.";
+    return new Chart($(canvasId),{type:"scatter",data:{datasets:[{label:"Response time vs "+label,data:pts,backgroundColor:color,borderColor:color,pointRadius:3}]},options:{...baseChartOptions("Response time (ms)"),scales:{x:{title:{display:true,text:label+" (%)",color:"#7894b9",font:{size:9}},ticks:{color:"#6f89ad",font:{size:9}},grid:{color:"#173252"}},y:{title:{display:true,text:"Response time (ms)",color:"#7894b9",font:{size:9}},ticks:{color:"#6f89ad",font:{size:9}},grid:{color:"#173252"}}}}});
+  };
+  datasetCpuChart=scatter("datasetCpuChart","datasetCpuNote",cpuCol,"CPU","#2c80ff");
+  datasetRamChart=scatter("datasetRamChart","datasetRamNote",ramCol,"RAM","#28d8c3");
+  const modelCompliance=Number.isFinite(lambda)?(1-Math.exp(-lambda*threshold))*100:0;
+  datasetSlaChart=new Chart($("datasetSlaChart"),{type:"bar",data:{labels:["SLA compliance","SLA violations"],datasets:[
+    {label:"Observed (%)",data:[compliance,100-compliance],backgroundColor:"#287cff"},
+    {label:"Exponential model (%)",data:[modelCompliance,100-modelCompliance],backgroundColor:"#b35cff"}
+  ]},options:{...baseChartOptions("Percent (%)"),scales:{...baseChartOptions("Percent (%)").scales,y:{...baseChartOptions("Percent (%)").scales.y,min:0,max:100}}}});
 }
