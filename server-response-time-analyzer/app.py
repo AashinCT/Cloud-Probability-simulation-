@@ -149,19 +149,26 @@ def main():
     
     # Main content area
     if st.session_state.response_times is None:
-        st.info("👈 Please configure parameters in the sidebar and click 'Generate New Data' to start.")
+        st.info(
+            "Generate synthetic data to use the simulation tabs, "
+            "or open Historical Dataset Analysis below."
+        )
+        with st.expander("📚 Historical Dataset Analysis", expanded=True):
+            from historical_analysis import render_historical_analysis
+            render_historical_analysis()
         return
-    
-    response_times = st.session_state.response_times
+
+response_times = st.session_state.response_times
     statistics = st.session_state.statistics
     
     # Tab 1: Overview & Statistics
-    tab1, tab2, tab3, tab4, tab5 = st.tabs([
+    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
         "📈 Overview",
         "📊 Visualizations",
         "🎯 Probability Analysis",
         "📋 SLA Monitoring",
-        "ℹ️ About"
+        "ℹ️ About",
+        "📚 Historical Dataset Analysis"
     ])
     
     # === TAB 1: OVERVIEW ===
@@ -503,6 +510,12 @@ def main():
         └── README.md             # Documentation
         ```
         """)
+
+    # === TAB 6: HISTORICAL DATASET ANALYSIS ===
+    with tab6:
+        from historical_analysis import render_historical_analysis
+        render_historical_analysis()
+
 
 
 if __name__ == "__main__":
