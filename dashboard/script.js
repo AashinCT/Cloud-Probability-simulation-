@@ -241,7 +241,11 @@ async function loadDashboard() {
   } catch (err) {
     $("serverStatus").textContent = "Backend Offline";
     $("serverStatus").style.color = "#ff8d8d";
-    const hosted = window.location.protocol === "https:";\n    console.error(err);\n    if (hosted && !new URLSearchParams(window.location.search).get("api")) {\n      $("serverStatus").textContent = "Backend URL required";\n    }
+    const hosted = window.location.protocol === "https:";
+    console.error(err);
+    if (hosted && !new URLSearchParams(window.location.search).get("api")) {
+      $("serverStatus").textContent = "Backend URL required";
+    }
   }
 }
 
