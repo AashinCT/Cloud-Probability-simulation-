@@ -122,6 +122,53 @@ def render_live_monitoring() -> None:
     success_rate = successful.mean() * 100
     valid_latency = numeric_latency.dropna()
 
+    st.subheader("Latency Anomaly Detection")
+    sensitivity = st.slider(
+        "Anomaly sensitivity (robust MAD multiplier)",
+        min_value=1.5,
+        max_value=5.0,
+        value=3.0,
+        step=0.5,
+        help="Lower values flag more unusual latency spikes. This is a heuristic, not a trained model.",
+    )
+    median_latency = valid_latency.median() if not valid_latency.empty else None
+    if len(valid_latency) >= 5:
+        mad = (valid_latency - median_latency).abs().median()
+        robust_sigma = 1.4826 * mad
+        # Avoid a zero-width threshold when most samples have identical timings.
+        minimum_margin = max(float(median_latency) * 0.5, 1.0)
+        latency_threshold = float(median_latency) + max(
+            float(sensitivity) * robust_sigma, minimum_margin
+        )
+        results["latency_anomaly"] = numeric_latency > latency_threshold
+        results["anomaly_reason"] = ""
+        results.loc[results["latency_anomaly"], "anomaly_reason"] = (
+            "Latency spike above robust threshold"
+        )
+        results.loc[~successful, "latency_anomaly"] = True
+        results.loc[~successful, "anomaly_reason"] = "HTTP failure or request error"
+        st.caption(
+            f"Robust latency threshold: {latency_threshold:.2f} ms "
+            f"(median {median_latency:.2f} ms). Failed requests are always flagged."
+        )
+    else:
+        results["latency_anomaly"] = ~successful
+        results["anomaly_reason"] = ""
+        results.loc[~successful, "anomaly_reason"] = "HTTP failure or request error"
+        st.info(
+            "Collect at least 5 probes for latency-spike detection. "
+            "HTTP/request failures are still flagged with smaller samples."
+        )
+
+    anomaly_count = int(results["latency_anomaly"].fillna(False).sum())
+    if anomaly_count:
+        st.warning(
+            f"⚠️ {anomaly_count} anomalous probe(s) detected out of {total}. "
+            "Review the probe details and rerun to see whether the issue persists."
+        )
+    else:
+        st.success("No anomalies detected in this probe batch.")
+
     st.subheader("Latest Probe Summary")
     c1, c2, c3, c4 = st.columns(4)
     c1.metric("Probes", f"{total}")
@@ -143,7 +190,8 @@ def render_live_monitoring() -> None:
             x="probe_number",
             y="latency_ms",
             markers=True,
-            title="Observed HTTP latency by probe",
+            color="latency_anomaly",
+            title="Observed HTTP latency by probe (anomalies highlighted)",
             labels={"probe_number": "Probe", "latency_ms": "Round-trip latency (ms)"},
         )
         st.plotly_chart(fig, use_container_width=True)
@@ -161,7 +209,7 @@ def render_live_monitoring() -> None:
         mime="text/csv",
     )
     st.caption(
-        "P50/P95/P99 are calculated from this run's individual probe latencies. "
+        "Anomaly detection uses a median/MAD-based heuristic and always flags failed requests; it is a triage aid, not proof of an incident. P50/P95/P99 are calculated from this run's individual probe latencies. "
         "For a small number of probes, especially fewer than 20, tail percentiles "
         "are indicative only. This is on-demand probing, not a persistent background monitor."
     )

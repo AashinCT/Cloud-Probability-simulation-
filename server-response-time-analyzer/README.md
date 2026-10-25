@@ -127,6 +127,7 @@ The exponential distribution is commonly used for modeling server response times
 - Record client-observed round-trip latency, HTTP status, UTC timestamp, and request errors.
 - Run a bounded batch of probes with a configurable timeout and delay.
 - View mean, P50, P95, and P99 latency for the current probe run, plus a latency chart.
+- Flag failed probes and unusually slow observations using a median/MAD robust threshold, with adjustable sensitivity and a reason shown for each flagged result.
 - Export the probe results as CSV.
 
 **Important:** probes are triggered manually; this is not a persistent background monitor. P95/P99 are indicative when the sample is small. Client-observed latency includes network and client-side overhead and does not directly measure server CPU/RAM. Avoid probing systems without permission.
