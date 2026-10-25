@@ -39,6 +39,7 @@
             <div class="dataset-control"><label for="latencyColumn">Latency / metric column</label><select id="latencyColumn"></select></div>
             <div class="dataset-control"><label for="latencyUnit">Values are in</label><select id="latencyUnit"><option value="ms">Milliseconds (ms)</option><option value="s">Seconds (s)</option></select></div>
             <div class="dataset-control"><label for="slaThresholdInput">SLA threshold (ms)</label><input id="slaThresholdInput" type="number" min="0.001" step="any" value="100"></div>
+            <div class="dataset-control"><label for="slaTargetInput">Required SLA target (%)</label><input id="slaTargetInput" type="number" min="0" max="100" step="0.1" value="99"></div>
             <button id="analyzeDatasetBtn" class="dataset-analyze-btn">Analyze dataset</button>
           </div>
           <p id="datasetMessage" class="dataset-message" role="status">Select a CSV file to begin. Live server monitoring continues separately.</p>
@@ -55,6 +56,24 @@
             <div class="metric-card"><div class="metric-icon">◷</div><div class="metric-label">P99</div><div class="metric-value" id="dsP99">--</div><div class="metric-note">percentile of selected values</div></div>
             <div class="metric-card warning"><div class="metric-icon">!</div><div class="metric-label">Observed SLA Compliance</div><div class="metric-value" id="dsSla">--</div><div class="metric-note" id="dsSlaNote">Selected threshold</div></div>
             <div class="metric-card success"><div class="metric-icon">⌁</div><div class="metric-label">Model P(X &gt; threshold)</div><div class="metric-value" id="dsDelay">--</div><div class="metric-note">Exponential model estimate</div></div>
+          </section>
+          <section class="panel dataset-sla-panel">
+            <div class="panel-head"><div><h2>Dataset SLA Analysis</h2><p>Evaluate historical data against the response-time threshold and required compliance target.</p></div><span id="datasetSlaStatus" class="sla-status nodata">Awaiting analysis</span></div>
+            <div class="sla-grid">
+              <div class="sla-card"><span>Response Threshold</span><strong id="dsSlaThreshold">--</strong><small>Maximum allowed latency</small></div>
+              <div class="sla-card"><span>Required SLA Target</span><strong id="dsSlaTarget">--</strong><small>Minimum compliance required</small></div>
+              <div class="sla-card"><span>Observed Compliance</span><strong id="dsSlaActual">--</strong><small>Based on uploaded values</small></div>
+              <div class="sla-card"><span>Observed Violations</span><strong id="dsSlaViolationCount">--</strong><small>Values above threshold</small></div>
+              <div class="sla-card"><span>Exponential Model Compliance</span><strong id="dsSlaModel">--</strong><small>Estimated from fitted λ</small></div>
+              <div class="sla-card"><span>Model Violation Probability</span><strong id="dsSlaModelViolation">--</strong><small>Estimated P(X &gt; threshold)</small></div>
+            </div>
+            <div class="sla-details">
+              <div><span>Total valid values</span><strong id="dsSlaTotal">--</strong></div>
+              <div><span>Compliant values</span><strong id="dsSlaCompliant">--</strong></div>
+              <div><span>Violating values</span><strong id="dsSlaViolating">--</strong></div>
+              <div><span>Lambda (λ)</span><strong id="dsSlaLambda">--</strong></div>
+            </div>
+            <div class="sla-explanation"><strong>Interpretation:</strong><span id="dsSlaInterpretation">Upload and analyze a dataset to calculate SLA performance.</span></div>
           </section>
           <section class="charts-grid dataset-charts-grid">
             <div class="panel large"><div class="panel-head"><div><h2>Selected Column History</h2><p>Values by CSV row order; choose a timestamp column separately if needed.</p></div></div><div class="chart-wrap"><canvas id="datasetHistoryChart"></canvas></div></div>
