@@ -309,9 +309,10 @@ $("datasetFile").addEventListener("change",async event=>{
 $("analyzeDatasetBtn").addEventListener("click",analyzeDataset);
 $("latencyColumn").addEventListener("change",()=>{$("datasetResults").hidden=true;});
 function analyzeDataset(){
-  const col=$("latencyColumn").value, unit=$("latencyUnit").value, thresholdMs=Number($("slaThresholdInput").value);
+  const col=$("latencyColumn").value, unit=$("latencyUnit").value, thresholdMs=Number($("slaThresholdInput").value), targetPercent=Number($("slaTargetInput").value);
   if(!datasetRows.length || !col){$("datasetMessage").textContent="Upload a valid CSV and choose a column first.";return;}
   if(!(thresholdMs>0)){ $("datasetMessage").textContent="Enter an SLA threshold greater than zero.";return;}
+  if(!Number.isFinite(targetPercent)||targetPercent<0||targetPercent>100){ $("datasetMessage").textContent="Required SLA target must be between 0 and 100 percent.";return;}
   const raw=datasetRows.map(r=>{const s=String(r[col]??"").replace(/,/g,"").trim();return s===""?NaN:Number(s);});
   const valid=raw.filter(Number.isFinite);
   if(!valid.length){$("datasetMessage").textContent="The selected column contains no usable numeric values. Choose a numeric column.";return;}
@@ -331,6 +332,23 @@ function analyzeDataset(){
   $("dsLambda").textContent=Number.isFinite(lambda)?fmtNumber(lambda)+" /s":"N/A";
   $("dsVariance").textContent=fmtNumber(variance)+" s²";$("dsP95").textContent=ms(p95);$("dsP99").textContent=ms(p99);
   $("dsSla").textContent=compliance.toFixed(2)+"%";$("dsSlaNote").textContent="Observed ≤ "+thresholdMs+" ms";
+  const modelViolation=Number.isFinite(lambda)?Math.exp(-lambda*threshold)*100:NaN;
+  const modelCompliancePct=Number.isFinite(modelViolation)?100-modelViolation:NaN;
+  const compliant=n-violations, passed=compliance>=targetPercent;
+  const status=$("datasetSlaStatus");
+  status.textContent=passed?"PASS":"SLA VIOLATION";
+  status.className="sla-status "+(passed?"pass":"violation");
+  $("dsSlaThreshold").textContent=thresholdMs+" ms";
+  $("dsSlaTarget").textContent=targetPercent.toFixed(1)+"%";
+  $("dsSlaActual").textContent=compliance.toFixed(2)+"%";
+  $("dsSlaViolationCount").textContent=violations.toLocaleString();
+  $("dsSlaModel").textContent=Number.isFinite(modelCompliancePct)?modelCompliancePct.toFixed(2)+"%":"N/A";
+  $("dsSlaModelViolation").textContent=Number.isFinite(modelViolation)?modelViolation.toFixed(2)+"%":"N/A";
+  $("dsSlaTotal").textContent=n.toLocaleString();
+  $("dsSlaCompliant").textContent=compliant.toLocaleString();
+  $("dsSlaViolating").textContent=violations.toLocaleString();
+  $("dsSlaLambda").textContent=Number.isFinite(lambda)?fmtNumber(lambda)+" /s":"N/A";
+  $("dsSlaInterpretation").textContent=(passed?"Observed data meets the required target. ":"Observed data misses the required target. ")+compliance.toFixed(2)+"% of valid values are within "+thresholdMs+" ms; target is "+targetPercent.toFixed(1)+"%. "+(isRawLatency?"The model estimate assumes an exponential latency distribution and may differ from observed results.":"This appears to be aggregated percentile/summary data, so SLA results describe these rows rather than individual requests.");
   $("dsDelay").textContent=Number.isFinite(lambda)?(Math.exp(-lambda*threshold)*100).toFixed(2)+"%":"N/A";
   $("dsMin").textContent=ms(sorted[0]);$("dsMax").textContent=ms(sorted[n-1]);$("dsStd").textContent=ms(sd);$("dsMedian").textContent=ms(p50);
   $("dsInvalid").textContent=(raw.length-n).toLocaleString();$("dsViolations").textContent=violations.toLocaleString();
@@ -367,9 +385,9 @@ function analyzeDataset(){
   };
   datasetCpuChart=scatter("datasetCpuChart","datasetCpuNote",cpuCol,"CPU","#2c80ff");
   datasetRamChart=scatter("datasetRamChart","datasetRamNote",ramCol,"RAM","#28d8c3");
-  const modelCompliance=Number.isFinite(lambda)?(1-Math.exp(-lambda*threshold))*100:0;
+  const chartModelCompliance=Number.isFinite(lambda)?(1-Math.exp(-lambda*threshold))*100:0;
   datasetSlaChart=new Chart($("datasetSlaChart"),{type:"bar",data:{labels:["SLA compliance","SLA violations"],datasets:[
     {label:"Observed (%)",data:[compliance,100-compliance],backgroundColor:"#287cff"},
-    {label:"Exponential model (%)",data:[modelCompliance,100-modelCompliance],backgroundColor:"#b35cff"}
+    {label:"Exponential model (%)",data:[chartModelCompliance,100-chartModelCompliance],backgroundColor:"#b35cff"}
   ]},options:{...baseChartOptions("Percent (%)"),scales:{...baseChartOptions("Percent (%)").scales,y:{...baseChartOptions("Percent (%)").scales.y,min:0,max:100}}}});
 }
