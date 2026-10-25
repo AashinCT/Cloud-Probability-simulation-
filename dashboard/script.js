@@ -391,3 +391,5 @@ function analyzeDataset(){
     {label:"Exponential model (%)",data:[chartModelCompliance,100-chartModelCompliance],backgroundColor:"#b35cff"}
   ]},options:{...baseChartOptions("Percent (%)"),scales:{...baseChartOptions("Percent (%)").scales,y:{...baseChartOptions("Percent (%)").scales.y,min:0,max:100}}}});
 }
+
+// Deployment refresh: dashboard uses the four implemented API endpoints.
