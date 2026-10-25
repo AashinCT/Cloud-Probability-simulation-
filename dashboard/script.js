@@ -1,4 +1,4 @@
-const API_BASE = "http://127.0.0.1:8000";
+const API_BASE = new URLSearchParams(window.location.search).get("api") || "http://127.0.0.1:8000";
 const SLA_LIMIT = 0.100;
 let historyChart, distributionChart, distributionBars, cpuChart, ramChart, slaComparisonChart;
 
@@ -106,13 +106,14 @@ function renderServerCharts(records) {
 
 async function loadDashboard() {
   try {
-    const [metricsRes, timesRes, serverRes, slaRes] = await Promise.all([
+    const [probeRes, metricsRes, timesRes, serverRes, slaRes] = await Promise.all([
+      fetch(API_BASE + "/api/probe"),
       fetch(API_BASE + "/api/metrics"),
       fetch(API_BASE + "/api/response-times"),
       fetch(API_BASE + "/api/server-metrics"),
       fetch(API_BASE + "/api/sla")
     ]);
-    if (!metricsRes.ok || !timesRes.ok || !serverRes.ok || !slaRes.ok) throw new Error("API unavailable");
+    if (!probeRes.ok || !metricsRes.ok || !timesRes.ok || !serverRes.ok || !slaRes.ok) throw new Error("One or more API endpoints failed. Check that the FastAPI backend is running at " + API_BASE + ".");
 
     const metrics = await metricsRes.json();
     const times = (await timesRes.json()).response_times || [];
@@ -268,11 +269,11 @@ function parseCSV(text) {
       else field+=c;
     } else if(c==='"') quoted=true;
     else if(c===","){row.push(field);field="";}
-    else if(c==="\n"){row.push(field.replace(/\\r$/,""));rows.push(row);row=[];field="";}
+    else if(c==="\n"){row.push(field.replace(/\r$/,""));rows.push(row);row=[];field="";}
     else field+=c;
   }
-  if(field.length || row.length){row.push(field.replace(/\\r$/,""));rows.push(row);}
-  return rows.filter(r=>r.some(v=>String(v).trim()!==""));
+  if(field.length || row.length){row.push(field.replace(/\r$/,""));rows.push(row);}
+  return rows.filter(r=>r.some(v=>String(v).trim()!=="")).map((r,i)=>i===0?r.map((v,j)=>j===0?String(v).replace(/^\uFEFF/,""):v):r);
 }
 function fmtNumber(n){return Number(n).toLocaleString(undefined,{maximumFractionDigits:6});}
 function destroyDatasetCharts(){[datasetHistoryChart,datasetHistogramChart,datasetModelChart,datasetCpuChart,datasetRamChart,datasetSlaChart,datasetDistributionBars].forEach(c=>{if(c)c.destroy();});datasetHistoryChart=datasetHistogramChart=datasetModelChart=datasetCpuChart=datasetRamChart=datasetSlaChart=datasetDistributionBars=null;}
