@@ -15,7 +15,8 @@
       <div class="brand"><div class="brand-icon">▣</div><div><div class="brand-name">Response Monitor</div><div class="brand-sub">Exponential Analytics</div></div></div>
       <nav class="nav">
         <button class="nav-item active">⌂ <span>Dashboard</span></button>
-        <button class="nav-item">◫ <span>Live Data</span></button>
+        <button class="nav-item" data-view="live">◫ <span>Live Data</span></button>
+        <button class="nav-item" data-view="dataset">▤ <span>Dataset Analysis</span></button>
         <button class="nav-item">⌁ <span>Statistics</span></button>
         <button class="nav-item">▥ <span>Charts</span></button>
         <a class="nav-item" id="slaNav" href="#slaAnalysis">◉ <span>SLA Analysis</span></a>
@@ -30,7 +31,43 @@
         <div class="top-status"><span class="online-dot"></span><span id="serverStatus">Server Online</span><span class="divider"></span><span id="clock">--:--:--</span><button id="refreshBtn" class="refresh">↻</button></div>
       </header>
 
-      <section class="metrics-grid">
+      <section id="datasetSection" class="dataset-section" hidden>
+        <div class="panel dataset-upload-panel">
+          <div class="panel-head"><div><h2>Historical Dataset Analysis</h2><p>Upload a CSV file to analyze historical latency and server snapshots without changing live monitoring data.</p></div><span class="dataset-badge">CSV · Local analysis</span></div>
+          <label class="upload-drop" for="datasetFile"><span class="upload-icon">↑</span><strong>Choose a CSV dataset</strong><span>File is processed in your browser and is not uploaded to a server.</span><input id="datasetFile" type="file" accept=".csv,text/csv"></label>
+          <div id="datasetControls" class="dataset-controls" hidden>
+            <div class="dataset-control"><label for="latencyColumn">Latency / metric column</label><select id="latencyColumn"></select></div>
+            <div class="dataset-control"><label for="latencyUnit">Values are in</label><select id="latencyUnit"><option value="ms">Milliseconds (ms)</option><option value="s">Seconds (s)</option></select></div>
+            <div class="dataset-control"><label for="slaThresholdInput">SLA threshold (ms)</label><input id="slaThresholdInput" type="number" min="0.001" step="any" value="100"></div>
+            <button id="analyzeDatasetBtn" class="dataset-analyze-btn">Analyze dataset</button>
+          </div>
+          <p id="datasetMessage" class="dataset-message" role="status">Select a CSV file to begin. Live server monitoring continues separately.</p>
+          <p id="datasetCaveat" class="dataset-caveat" hidden></p>
+        </div>
+        <div id="datasetResults" hidden>
+          <div class="dataset-summary"><span id="datasetRowCount">0 rows</span><span id="datasetColumnLabel">Selected column</span><span id="datasetDataType">Dataset analysis</span></div>
+          <section class="metrics-grid dataset-metrics-grid">
+            <div class="metric-card"><div class="metric-icon">#</div><div class="metric-label">Valid Values</div><div class="metric-value" id="dsCount">--</div><div class="metric-note">numeric, non-empty rows</div></div>
+            <div class="metric-card"><div class="metric-icon">◷</div><div class="metric-label">Mean</div><div class="metric-value" id="dsMean">--</div><div class="metric-note">average selected value</div></div>
+            <div class="metric-card"><div class="metric-icon">λ</div><div class="metric-label">Lambda (λ)</div><div class="metric-value" id="dsLambda">--</div><div class="metric-note">1 / mean in seconds, if valid</div></div>
+            <div class="metric-card"><div class="metric-icon">Σ</div><div class="metric-label">Variance</div><div class="metric-value compact" id="dsVariance">--</div><div class="metric-note">population variance</div></div>
+            <div class="metric-card"><div class="metric-icon">◷</div><div class="metric-label">P95</div><div class="metric-value" id="dsP95">--</div><div class="metric-note">percentile of selected values</div></div>
+            <div class="metric-card"><div class="metric-icon">◷</div><div class="metric-label">P99</div><div class="metric-value" id="dsP99">--</div><div class="metric-note">percentile of selected values</div></div>
+            <div class="metric-card warning"><div class="metric-icon">!</div><div class="metric-label">Observed SLA Compliance</div><div class="metric-value" id="dsSla">--</div><div class="metric-note" id="dsSlaNote">Selected threshold</div></div>
+            <div class="metric-card success"><div class="metric-icon">⌁</div><div class="metric-label">Model P(X &gt; threshold)</div><div class="metric-value" id="dsDelay">--</div><div class="metric-note">Exponential model estimate</div></div>
+          </section>
+          <section class="charts-grid dataset-charts-grid">
+            <div class="panel large"><div class="panel-head"><div><h2>Selected Column History</h2><p>Values by CSV row order; choose a timestamp column separately if needed.</p></div></div><div class="chart-wrap"><canvas id="datasetHistoryChart"></canvas></div></div>
+            <div class="panel"><div class="panel-head"><div><h2>Value Distribution</h2><p>Histogram of selected numeric values</p></div></div><div class="chart-wrap"><canvas id="datasetHistogramChart"></canvas></div></div>
+          </section>
+          <section class="charts-grid dataset-charts-grid">
+            <div class="panel"><div class="panel-head"><div><h2>Empirical vs Exponential Model</h2><p>Model fit is illustrative; assess goodness-of-fit before relying on it.</p></div></div><div class="chart-wrap"><canvas id="datasetModelChart"></canvas></div></div>
+            <div class="panel"><div class="panel-head"><div><h2>Dataset Summary</h2></div></div><div class="stats-list dataset-stats"><div><span>Minimum</span><strong id="dsMin">--</strong></div><div><span>Maximum</span><strong id="dsMax">--</strong></div><div><span>Standard deviation</span><strong id="dsStd">--</strong></div><div><span>Median</span><strong id="dsMedian">--</strong></div><div><span>Missing / non-numeric</span><strong id="dsInvalid">--</strong></div><div><span>Values above threshold</span><strong id="dsViolations">--</strong></div></div></div>
+          </section>
+        </div>
+      </section>
+
+      <section id="liveDashboard">\n      <section class="metrics-grid">
         <div class="metric-card"><div class="metric-icon">⇄</div><div class="metric-label">Total Requests</div><div class="metric-value" id="requests">--</div><div class="metric-note">current dataset</div></div>
         <div class="metric-card"><div class="metric-icon">◷</div><div class="metric-label">Mean Response Time</div><div class="metric-value" id="mean">--</div><div class="metric-note" id="meanSeconds">--</div></div>
         <div class="metric-card"><div class="metric-icon">λ</div><div class="metric-label">Lambda (λ)</div><div class="metric-value" id="lambda">--</div><div class="metric-note">estimated service-rate parameter</div></div>
@@ -109,7 +146,7 @@
         <div class="panel"><div class="panel-head"><h2>Live Feed</h2><span class="live-badge">● Live</span></div><div class="feed-head"><span>#</span><span>Response Time</span><span>Status</span></div><div id="liveFeed" class="live-feed"></div></div>
       </section>
 
-      <footer><span>☁ Server Response Time Modeling Using Exponential Distribution</span><span>FastAPI · Python · Ubuntu · Real-time</span></footer>
+      </section>\n      <footer><span>☁ Server Response Time Modeling Using Exponential Distribution</span><span>FastAPI · Python · Ubuntu · Real-time</span></footer>
     </main>
   </div>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
