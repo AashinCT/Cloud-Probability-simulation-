@@ -153,3 +153,9 @@ The repository contains project documentation, setup instructions, configuration
 ## Author
 **AashinCT**  
 Karunya Institute of Technology and Sciences
+
+## Run the live dashboard locally
+
+The static dashboard in `dashboard/` requires its FastAPI backend. On Windows, double-click `dashboard/RUN_LOCAL.bat`. This starts both services and opens [http://127.0.0.1:8080](http://127.0.0.1:8080). API health and interactive docs are available at `http://127.0.0.1:8000/health` and `http://127.0.0.1:8000/docs`. See [dashboard/RUN_LOCAL.md](dashboard/RUN_LOCAL.md) for manual startup and hosting limitations.
+
+**Hosting note:** GitHub Pages only serves static files; it cannot run the Python API. A public hosted dashboard needs a separately deployed HTTPS backend. The local startup script runs the complete dashboard/backend pair on your machine.
