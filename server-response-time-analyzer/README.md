@@ -129,8 +129,11 @@ The exponential distribution is commonly used for modeling server response times
 - View mean, P50, P95, and P99 latency for the current probe run, plus a latency chart.
 - Flag failed probes and unusually slow observations using a median/MAD robust threshold, with adjustable sensitivity and a reason shown for each flagged result.
 - Export the probe results as CSV.
+- Retain repeated probe batches in the current Streamlit session, with a trend chart for median latency, success rate, and anomaly counts.
+- Compare the latest batch's median latency with the previous batch for the selected endpoint.
+- Export session history as CSV for further analysis.
 
-**Important:** probes are triggered manually; this is not a persistent background monitor. P95/P99 are indicative when the sample is small. Client-observed latency includes network and client-side overhead and does not directly measure server CPU/RAM. Avoid probing systems without permission.
+**Important:** probes are triggered manually; this is not a persistent background monitor. Session history is in-memory and can reset when the browser session or server restarts; it is not shared between users or saved to a database. P95/P99 are indicative when the sample is small. Client-observed latency includes network and client-side overhead and does not directly measure server CPU/RAM. Avoid probing systems without permission.
 
 ## Project Structure
 
