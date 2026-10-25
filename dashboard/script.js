@@ -259,8 +259,6 @@ $("slaNav").addEventListener("click", () => {
 let datasetRows = [], datasetHeaders = [], datasetHistoryChart, datasetHistogramChart, datasetModelChart, datasetCpuChart, datasetRamChart, datasetSlaChart, datasetDistributionBars;
 const datasetState = {active:false};
 function parseCSV(text) {
-  // Strip a UTF-8 BOM and parse both LF and CRLF CSV files.
-  text = String(text).replace(/^\uFEFF/, "");
   const rows=[]; let row=[], field="", quoted=false;
   for(let i=0;i<text.length;i++){
     const c=text[i];
@@ -270,10 +268,10 @@ function parseCSV(text) {
       else field+=c;
     } else if(c==='"') quoted=true;
     else if(c===","){row.push(field);field="";}
-    else if(c==="\n"){row.push(field.replace(/\r$/,""));rows.push(row);row=[];field="";}
+    else if(c==="\n"){row.push(field.replace(/\\r$/,""));rows.push(row);row=[];field="";}
     else field+=c;
   }
-  if(field.length || row.length){row.push(field.replace(/\r$/,""));rows.push(row);}
+  if(field.length || row.length){row.push(field.replace(/\\r$/,""));rows.push(row);}
   return rows.filter(r=>r.some(v=>String(v).trim()!==""));
 }
 function fmtNumber(n){return Number(n).toLocaleString(undefined,{maximumFractionDigits:6});}
@@ -297,7 +295,7 @@ $("datasetFile").addEventListener("change",async event=>{
     datasetHeaders.forEach(h=>{
       const opt=document.createElement("option");opt.value=h;opt.textContent=h;select.appendChild(opt);
     });
-    const likely=datasetHeaders.find(h=>/response.?time|latency|duration|elapsed|p95|p99|p50|time.?ms|time.?s|^time$|^delay$|^milliseconds?$|^ms$/i.test(h.replace(/^\uFEFF/, "").trim()));
+    const likely=datasetHeaders.find(h=>/response.?time|latency|duration|elapsed|p95|p99|p50|time.?ms|time.?s/i.test(h));
     if(likely)select.value=likely;
     const selected=select.value;
     const sample=datasetRows.map(r=>Number(String(r[selected]??"").replace(/,/g,""))).filter(Number.isFinite);
@@ -308,7 +306,7 @@ $("datasetFile").addEventListener("change",async event=>{
     if(!sample.length) $("datasetMessage").textContent+=" The selected column has no numeric values; choose another column.";
   }catch(err){$("datasetMessage").textContent="Could not read this CSV: "+err.message;}
 });
-$("analyzeDatasetBtn").addEventListener("click", () => {\n  try { analyzeDataset(); }\n  catch (err) {\n    console.error("Dataset analysis failed:", err);\n    $("datasetResults").hidden = true;\n    $("datasetMessage").textContent = "Dataset analysis failed: " + (err && err.message ? err.message : String(err)) + ". Check that the CSV contains a numeric response-time column, then try again.";\n  }\n});
+$("analyzeDatasetBtn").addEventListener("click",analyzeDataset);
 $("latencyColumn").addEventListener("change",()=>{$("datasetResults").hidden=true;});
 function analyzeDataset(){
   const col=$("latencyColumn").value, unit=$("latencyUnit").value, thresholdMs=Number($("slaThresholdInput").value), targetPercent=Number($("slaTargetInput").value);
