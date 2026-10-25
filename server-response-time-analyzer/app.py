@@ -158,7 +158,7 @@ def main():
             render_historical_analysis()
         return
 
-response_times = st.session_state.response_times
+    response_times = st.session_state.response_times
     statistics = st.session_state.statistics
     
     # Tab 1: Overview & Statistics
