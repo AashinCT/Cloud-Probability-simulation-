@@ -10,6 +10,7 @@ from data_generator import generate_response_times, estimate_lambda, save_respon
 from analysis import calculate_statistics, calculate_percentiles, get_statistics_summary
 from probability import calculate_probability_comparison, theoretical_cdf, theoretical_survival
 from sla import check_sla_compliance, get_sla_summary, estimate_required_threshold
+from live_monitoring import render_live_monitoring
 from visualization import (
     create_histogram_chart,
     create_pdf_comparison_chart,
@@ -70,7 +71,7 @@ def main():
         st.header("🧭 Navigation")
         page = st.radio(
             "Choose a workspace",
-            ["📚 Historical Analysis", "🧪 Simulation Dashboard"],
+            ["📚 Historical Analysis", "🌐 Live API Monitoring", "🧪 Simulation Dashboard"],
             index=0,
             key="main_navigation",
         )
@@ -87,6 +88,10 @@ def main():
         from historical_analysis import render_historical_analysis
 
         render_historical_analysis()
+        return
+
+    if page == "🌐 Live API Monitoring":
+        render_live_monitoring()
         return
     
     # Sidebar configuration
