@@ -39,3 +39,5 @@ button{font:inherit}a{text-decoration:none}.app-shell{display:flex;min-height:10
 .dataset-metrics-grid{margin-top:0}.dataset-charts-grid{margin-top:0}.dataset-stats{margin-top:4px}
 @media(max-width:1000px){.dataset-controls{grid-template-columns:1fr 1fr}.dataset-control:first-child{grid-column:1/-1}}
 @media(max-width:520px){.dataset-controls{grid-template-columns:1fr}.dataset-control:first-child{grid-column:auto}.dataset-badge{display:none}}
+
+.dataset-chart-note{font-size:10px;color:#8ea7ca;line-height:1.5;margin:8px 0 0;min-height:15px}
