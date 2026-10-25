@@ -358,7 +358,7 @@ function analyzeDataset(){
   const responseCol=datasetHeaders.find(h=>/response.?time|latency|duration|elapsed/i.test(h))||col;
   const getNumbers=h=>datasetRows.map(r=>{const s=String(r[h]??"").replace(/,/g,"").trim();return s===""?NaN:Number(s);});
   const responseRaw=getNumbers(responseCol);
-  const responseMs=responseRaw.map(v=>v*(/(_s|seconds?|time.?s)$/i.test(responseCol)?1000:1));
+  const responseMs=responseRaw.map(v=>responseCol===col?v*(unit==="s"?1000:1):v*(/(_s|seconds?|time.?s)$/i.test(responseCol)?1000:1));
   const scatter=(canvasId,noteId,metricCol,label,color)=>{
     const metric=metricCol?getNumbers(metricCol):[];
     const pts=metric.map((v,i)=>({x:v,y:responseMs[i]})).filter(p=>Number.isFinite(p.x)&&Number.isFinite(p.y));
