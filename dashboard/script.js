@@ -252,3 +252,101 @@ setInterval(loadDashboard, 10000);
 $("slaNav").addEventListener("click", () => {
   $("slaAnalysis").scrollIntoView({ behavior: "smooth", block: "start" });
 });
+
+
+// Dataset Analysis mode. All uploaded-file processing stays in this browser and never
+// mutates the live API data or live-monitoring charts.
+let datasetRows = [], datasetHeaders = [], datasetHistoryChart, datasetHistogramChart, datasetModelChart;
+const datasetState = {active:false};
+function parseCSV(text) {
+  const rows=[]; let row=[], field="", quoted=false;
+  for(let i=0;i<text.length;i++){
+    const c=text[i];
+    if(quoted){
+      if(c==='"' && text[i+1]==='"'){field+='"';i++;}
+      else if(c==='"') quoted=false;
+      else field+=c;
+    } else if(c==='"') quoted=true;
+    else if(c===","){row.push(field);field="";}
+    else if(c==="\\n"){row.push(field.replace(/\\r$/,""));rows.push(row);row=[];field="";}
+    else field+=c;
+  }
+  if(field.length || row.length){row.push(field.replace(/\\r$/,""));rows.push(row);}
+  return rows.filter(r=>r.some(v=>String(v).trim()!==""));
+}
+function fmtNumber(n){return Number(n).toLocaleString(undefined,{maximumFractionDigits:6});}
+function destroyDatasetCharts(){[datasetHistoryChart,datasetHistogramChart,datasetModelChart].forEach(c=>{if(c)c.destroy();});datasetHistoryChart=datasetHistogramChart=datasetModelChart=null;}
+function showMode(mode){
+  datasetState.active=mode==="dataset";
+  $("liveDashboard").hidden=datasetState.active;
+  $("datasetSection").hidden=!datasetState.active;
+  document.querySelectorAll(".nav-item[data-view]").forEach(b=>b.classList.toggle("active",b.dataset.view===mode));
+  if(!datasetState.active) loadDashboard();
+}
+document.querySelectorAll(".nav-item[data-view]").forEach(b=>b.addEventListener("click",()=>showMode(b.dataset.view)));
+$("datasetFile").addEventListener("change",async event=>{
+  const file=event.target.files && event.target.files[0]; if(!file)return;
+  try{
+    const text=await file.text(), parsed=parseCSV(text);
+    if(parsed.length<2) throw new Error("The CSV must contain a header row and at least one data row.");
+    datasetHeaders=parsed[0].map((h,i)=>String(h).trim()||("Column "+(i+1)));
+    datasetRows=parsed.slice(1).map(r=>Object.fromEntries(datasetHeaders.map((h,i)=>[h,(r[i]??"").trim()])));
+    const select=$("latencyColumn");select.innerHTML="";
+    datasetHeaders.forEach(h=>{
+      const opt=document.createElement("option");opt.value=h;opt.textContent=h;select.appendChild(opt);
+    });
+    const likely=datasetHeaders.find(h=>/response.?time|latency|duration|elapsed|p95|p99|p50|time.?ms|time.?s/i.test(h));
+    if(likely)select.value=likely;
+    const selected=select.value;
+    const sample=datasetRows.map(r=>Number(String(r[selected]??"").replace(/,/g,""))).filter(Number.isFinite);
+    $("latencyUnit").value=/(_s|seconds?|time.?s)$/i.test(selected)?"s":"ms";
+    $("datasetControls").hidden=false;$("datasetResults").hidden=true;
+    $("datasetMessage").textContent="Loaded "+file.name+" · "+datasetRows.length.toLocaleString()+" data rows · "+datasetHeaders.length+" columns. Select the correct numeric column and unit, then analyze.";
+    $("datasetCaveat").hidden=true;
+    if(!sample.length) $("datasetMessage").textContent+=" The selected column has no numeric values; choose another column.";
+  }catch(err){$("datasetMessage").textContent="Could not read this CSV: "+err.message;}
+});
+$("analyzeDatasetBtn").addEventListener("click",analyzeDataset);
+$("latencyColumn").addEventListener("change",()=>{$("datasetResults").hidden=true;});
+function analyzeDataset(){
+  const col=$("latencyColumn").value, unit=$("latencyUnit").value, thresholdMs=Number($("slaThresholdInput").value);
+  if(!datasetRows.length || !col){$("datasetMessage").textContent="Upload a valid CSV and choose a column first.";return;}
+  if(!(thresholdMs>0)){ $("datasetMessage").textContent="Enter an SLA threshold greater than zero.";return;}
+  const raw=datasetRows.map(r=>{const s=String(r[col]??"").replace(/,/g,"").trim();return s===""?NaN:Number(s);});
+  const valid=raw.filter(Number.isFinite);
+  if(!valid.length){$("datasetMessage").textContent="The selected column contains no usable numeric values. Choose a numeric column.";return;}
+  if(valid.some(v=>v<0)){ $("datasetMessage").textContent="Latency values must be non-negative. Choose a valid latency/metric column.";return;}
+  const values=valid.map(v=>unit==="ms"?v/1000:v), sorted=[...values].sort((a,b)=>a-b);
+  const n=values.length, mean=values.reduce((a,b)=>a+b,0)/n;
+  const variance=values.reduce((a,b)=>a+(b-mean)**2,0)/n, sd=Math.sqrt(variance);
+  const p50=percentile(values,.5), p95=percentile(values,.95), p99=percentile(values,.99);
+  const lambda=mean>0?1/mean:NaN, threshold=thresholdMs/1000;
+  const isRawLatency=!/^(p50|p95|p99|median|percentile)/i.test(col.replace(/[ _-]/g,""));
+  const violations=values.filter(v=>v>threshold).length, compliance=(n-violations)/n*100;
+  $("datasetResults").hidden=false;
+  $("datasetRowCount").textContent=datasetRows.length.toLocaleString()+" rows";
+  $("datasetColumnLabel").textContent=col+" · "+unit;
+  $("datasetDataType").textContent=isRawLatency?"Selected values":"Aggregated percentile snapshots";
+  $("dsCount").textContent=n.toLocaleString();$("dsMean").textContent=ms(mean);
+  $("dsLambda").textContent=Number.isFinite(lambda)?fmtNumber(lambda)+" /s":"N/A";
+  $("dsVariance").textContent=fmtNumber(variance)+" s²";$("dsP95").textContent=ms(p95);$("dsP99").textContent=ms(p99);
+  $("dsSla").textContent=compliance.toFixed(2)+"%";$("dsSlaNote").textContent="Observed ≤ "+thresholdMs+" ms";
+  $("dsDelay").textContent=Number.isFinite(lambda)?(Math.exp(-lambda*threshold)*100).toFixed(2)+"%":"N/A";
+  $("dsMin").textContent=ms(sorted[0]);$("dsMax").textContent=ms(sorted[n-1]);$("dsStd").textContent=ms(sd);$("dsMedian").textContent=ms(p50);
+  $("dsInvalid").textContent=(raw.length-n).toLocaleString();$("dsViolations").textContent=violations.toLocaleString();
+  $("datasetMessage").textContent="Analysis complete. Dataset results are separate from live server measurements.";
+  const caveat=$("datasetCaveat");caveat.hidden=false;
+  caveat.textContent=isRawLatency
+    ?"Model note: λ and P(X > threshold) assume independent, exponentially distributed request latencies. Compare model estimates with observed compliance; the exponential assumption may not fit real traffic."
+    :"This column appears to contain pre-aggregated percentile/summary values. Statistics and percentiles shown are across these snapshots, not individual HTTP requests; do not interpret λ or the fitted exponential curve as a request-level model.";
+  const valsMs=values.map(v=>v*1000), max=Math.max(...valsMs,thresholdMs), min=Math.min(...valsMs), bins=12, step=(max-min||1)/bins, counts=Array(bins).fill(0);
+  valsMs.forEach(v=>counts[Math.min(bins-1,Math.floor((v-min)/step))]++);
+  destroyDatasetCharts();
+  datasetHistoryChart=new Chart($("datasetHistoryChart"),{type:"line",data:{labels:valsMs.map((_,i)=>i+1),datasets:[{label:col+" (ms)",data:valsMs,borderColor:"#2c80ff",backgroundColor:"rgba(44,128,255,.12)",fill:true,tension:.2,pointRadius:1}]},options:baseChartOptions("Milliseconds")});
+  datasetHistogramChart=new Chart($("datasetHistogramChart"),{type:"bar",data:{labels:counts.map((_,i)=>(min+i*step).toFixed(2)+"–"+(min+(i+1)*step).toFixed(2)),datasets:[{label:"Rows",data:counts,backgroundColor:"#28d8c3",borderRadius:3}]},options:baseChartOptions("Rows")});
+  const xmax=Math.max(sorted[n-1],threshold), points=Array.from({length:40},(_,i)=>i*xmax/39), observedBins=counts;
+  datasetModelChart=new Chart($("datasetModelChart"),{type:"line",data:{labels:points.map(x=>(x*1000).toFixed(2)),datasets:[
+    {label:"Exponential density (scaled)",data:Number.isFinite(lambda)?points.map(x=>lambda*Math.exp(-lambda*x)*n*(xmax/39)):[],borderColor:"#b35cff",pointRadius:0,borderWidth:2,tension:.2},
+    {label:"Threshold",data:points.map(()=>null),borderColor:"#ffad3d",pointRadius:0}
+  ]},options:{...baseChartOptions("Scaled density"),scales:{...baseChartOptions("Scaled density").scales,x:{...baseChartOptions("Scaled density").scales.x,title:{display:true,text:"Value (ms)",color:"#7894b9",font:{size:9}}}}}});
+}
