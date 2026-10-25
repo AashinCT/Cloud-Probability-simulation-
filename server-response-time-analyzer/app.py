@@ -64,10 +64,30 @@ def initialize_session_state():
 def main():
     # Initialize session state
     initialize_session_state()
-    
+
+    # Keep historical analysis and synthetic simulation as separate workspaces.
+    with st.sidebar:
+        st.header("🧭 Navigation")
+        page = st.radio(
+            "Choose a workspace",
+            ["📚 Historical Analysis", "🧪 Simulation Dashboard"],
+            index=0,
+            key="main_navigation",
+        )
+
     # Header
     st.title("📊 Server Response Time Analyzer")
-    st.markdown("Modeling and SLA Performance Analysis Using Exponential Distribution")
+    st.markdown(
+        "Historical monitoring and simulation-based SLA performance analysis"
+    )
+
+    # Historical Analysis is the default landing page. Return before rendering
+    # simulation-only configuration controls.
+    if page == "📚 Historical Analysis":
+        from historical_analysis import render_historical_analysis
+
+        render_historical_analysis()
+        return
     
     # Sidebar configuration
     with st.sidebar:
@@ -150,25 +170,21 @@ def main():
     # Main content area
     if st.session_state.response_times is None:
         st.info(
-            "Generate synthetic data to use the simulation tabs, "
-            "or open Historical Dataset Analysis below."
+            "Generate synthetic data using the controls in the sidebar "
+            "to access the simulation analysis."
         )
-        with st.expander("📚 Historical Dataset Analysis", expanded=True):
-            from historical_analysis import render_historical_analysis
-            render_historical_analysis()
         return
 
     response_times = st.session_state.response_times
     statistics = st.session_state.statistics
     
     # Tab 1: Overview & Statistics
-    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+    tab1, tab2, tab3, tab4, tab5 = st.tabs([
         "📈 Overview",
         "📊 Visualizations",
         "🎯 Probability Analysis",
         "📋 SLA Monitoring",
         "ℹ️ About",
-        "📚 Historical Dataset Analysis"
     ])
     
     # === TAB 1: OVERVIEW ===
@@ -511,10 +527,6 @@ def main():
         ```
         """)
 
-    # === TAB 6: HISTORICAL DATASET ANALYSIS ===
-    with tab6:
-        from historical_analysis import render_historical_analysis
-        render_historical_analysis()
 
 
 
