@@ -19,6 +19,7 @@ The system models server response times using the exponential probability distri
 - **Pandas** - Data manipulation and analysis
 - **SciPy** - Statistical functions and distributions
 - **Plotly** - Interactive data visualizations
+- **Requests** - HTTP endpoint probes
 
 ## Mathematical Model
 
@@ -119,6 +120,16 @@ The exponential distribution is commonly used for modeling server response times
 - Tabbed interface for different analyses
 - Comprehensive mathematical explanations
 - About section with limitations and considerations
+
+### 7. Live API Monitoring (On-Demand)
+
+- Probe an HTTP/HTTPS endpoint you own or are authorized to test.
+- Record client-observed round-trip latency, HTTP status, UTC timestamp, and request errors.
+- Run a bounded batch of probes with a configurable timeout and delay.
+- View mean, P50, P95, and P99 latency for the current probe run, plus a latency chart.
+- Export the probe results as CSV.
+
+**Important:** probes are triggered manually; this is not a persistent background monitor. P95/P99 are indicative when the sample is small. Client-observed latency includes network and client-side overhead and does not directly measure server CPU/RAM. Avoid probing systems without permission.
 
 ## Project Structure
 
