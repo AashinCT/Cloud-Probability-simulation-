@@ -285,11 +285,13 @@ function showMode(mode){
 }
 document.querySelectorAll(".nav-item[data-view]").forEach(b=>b.addEventListener("click",()=>showMode(b.dataset.view)));
 // Statistics opens the dataset statistics workspace; the Dataset Analysis button remains available separately.
-$("statisticsNav").addEventListener("click",()=>{
+let bundledDatasetLoaded=false;
+$("statisticsNav").addEventListener("click",async()=>{
   showMode("dataset");
   document.querySelectorAll(".nav-item").forEach(b=>b.classList.remove("active"));
   $("statisticsNav").classList.add("active");
-  const target = $("datasetResults").hidden ? document.querySelector(".dataset-upload-panel") : $("datasetResults");
+  if(!bundledDatasetLoaded){await loadBundledDataset();bundledDatasetLoaded=!$("datasetResults").hidden;}
+  const target=$("datasetResults").hidden?document.querySelector(".dataset-upload-panel"):$("datasetResults");
   target.scrollIntoView({behavior:"smooth",block:"start"});
 });
 $("datasetFile").addEventListener("change",async event=>{
@@ -316,6 +318,47 @@ $("datasetFile").addEventListener("change",async event=>{
 });
 $("analyzeDatasetBtn").addEventListener("click",analyzeDataset);
 $("latencyColumn").addEventListener("change",()=>{$("datasetResults").hidden=true;});
+function renderAllFeatureStatistics(){
+  const tbody=$("allFeatureStatsTable").querySelector("tbody");
+  const fmt=v=>Number.isFinite(v)?fmtNumber(v):"—";
+  tbody.innerHTML="";
+  datasetHeaders.forEach(h=>{
+    const raw=datasetRows.map(r=>{const s=String(r[h]??"").trim().replace(/,/g,"");return s===""?NaN:Number(s);});
+    const valid=raw.filter(Number.isFinite), missing=raw.length-valid.length;
+    const numeric=valid.length>0 && valid.length>=Math.max(3,Math.floor(raw.length*.5));
+    let st={};
+    if(numeric){
+      const sorted=[...valid].sort((a,b)=>a-b), n=valid.length, mean=valid.reduce((a,b)=>a+b,0)/n;
+      const variance=n>1?valid.reduce((a,b)=>a+(b-mean)**2,0)/(n-1):NaN, sd=Math.sqrt(variance);
+      const q=p=>percentile(sorted,p), q1=q(.25), median=q(.5), q3=q(.75), iqr=q3-q1;
+      const m2=valid.reduce((a,b)=>a+(b-mean)**2,0)/n, m3=valid.reduce((a,b)=>a+(b-mean)**3,0)/n, m4=valid.reduce((a,b)=>a+(b-mean)**4,0)/n;
+      st={n,mean,median,sd,variance,min:sorted[0],q1,q3,max:sorted[n-1],skew:m2>0?m3/Math.pow(m2,1.5):0,kurt:m2>0?m4/(m2*m2)-3:0,outliers:valid.filter(v=>v<q1-1.5*iqr||v>q3+1.5*iqr).length};
+    }
+    const tr=document.createElement("tr");tr.style.borderTop="1px solid #17304f";
+    const cells=[h,numeric?"Numeric":"Categorical",numeric?st.n:raw.filter(v=>String(v??"").trim()!=="").length,missing,new Set(datasetRows.map(r=>String(r[h]??"").trim()).filter(v=>v!=="")).size,numeric?fmt(st.mean):"—",numeric?fmt(st.median):"—",numeric?fmt(st.sd):"—",numeric?fmt(st.variance):"—",numeric?fmt(st.min):"—",numeric?fmt(st.q1):"—",numeric?fmt(st.q3):"—",numeric?fmt(st.max):"—",numeric?fmt(st.skew):"—",numeric?fmt(st.kurt):"—",numeric?st.outliers.toLocaleString():"—"];
+    cells.forEach((v,i)=>{const td=document.createElement("td");td.textContent=v;td.style.cssText="padding:8px 9px;color:#c5d5ec;white-space:nowrap";if(i===0)td.style.color="#fff";tr.appendChild(td);});
+    tbody.appendChild(tr);
+  });
+}
+async function loadBundledDataset(){
+  $("datasetMessage").textContent="Loading repository dataset and calculating statistics for every feature…";
+  try{
+    const response=await fetch("https://raw.githubusercontent.com/AashinCT/Cloud-Probability-simulation-/main/data/sofie.csv",{cache:"no-store"});
+    if(!response.ok) throw new Error("Could not fetch bundled dataset ("+response.status+").");
+    const parsed=parseCSV(await response.text());
+    if(parsed.length<2) throw new Error("The repository CSV is empty or invalid.");
+    datasetHeaders=parsed[0].map((h,i)=>String(h).trim()||("Column "+(i+1)));
+    datasetRows=parsed.slice(1).map(r=>Object.fromEntries(datasetHeaders.map((h,i)=>[h,(r[i]??"").trim()])));
+    const select=$("latencyColumn");select.innerHTML="";
+    datasetHeaders.forEach(h=>{const opt=document.createElement("option");opt.value=h;opt.textContent=h;select.appendChild(opt);});
+    const likely=datasetHeaders.find(h=>/vllm.*(e2e.*latency|latency.*p50)|response.?time|latency/i.test(h));
+    if(likely)select.value=likely;
+    $("latencyUnit").value=/(_s|seconds?|time.?s)$/i.test(select.value)?"s":"ms";
+    $("datasetControls").hidden=false;$("datasetResults").hidden=false;
+    $("datasetMessage").textContent="Loaded repository dataset · "+datasetRows.length.toLocaleString()+" rows · "+datasetHeaders.length+" features. Full feature statistics are shown below.";
+    renderAllFeatureStatistics();analyzeDataset();
+  }catch(err){$("datasetMessage").textContent="Could not load repository dataset automatically: "+err.message+" Check GitHub Pages deployment and data/sofie.csv.";}
+}
 function analyzeDataset(){
   const col=$("latencyColumn").value, unit=$("latencyUnit").value, thresholdMs=Number($("slaThresholdInput").value), targetPercent=Number($("slaTargetInput").value);
   if(!datasetRows.length || !col){$("datasetMessage").textContent="Upload a valid CSV and choose a column first.";return;}
