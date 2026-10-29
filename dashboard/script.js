@@ -677,4 +677,46 @@ function analyzeDataset(){
   ]},options:{...baseChartOptions("Percent (%)","SLA outcome"),scales:{...baseChartOptions("Percent (%)","SLA outcome").scales,y:{...baseChartOptions("Percent (%)","SLA outcome").scales.y,min:0,max:100}}}});
 }
 
+// Dataset-backed TTFT/TPOT analysis. Rows are aggregated monitoring snapshots,
+// not individual requests; this reports snapshot compliance rather than request-level SLA.
+let llmLatencyChart=null;
+function renderLlmLatencyAnalysis(){
+  const cols=[
+    {key:"ttft50",name:"vllm_ttft_p50_s",label:"TTFT P50"},
+    {key:"ttft95",name:"vllm_ttft_p95_s",label:"TTFT P95"},
+    {key:"ttft99",name:"vllm_ttft_p99_s",label:"TTFT P99"},
+    {key:"tpot50",name:"vllm_time_per_output_token_p50_s",label:"TPOT P50"},
+    {key:"tpot95",name:"vllm_time_per_output_token_p95_s",label:"TPOT P95"},
+    {key:"tpot99",name:"vllm_time_per_output_token_p99_s",label:"TPOT P99"}
+  ];
+  const existing=cols.filter(c=>datasetHeaders.includes(c.name)), stats={};
+  const parse=(row,col)=>{const raw=String(row[col]??"").trim().replace(/,/g,"");if(!raw)return NaN;const n=Number(raw);return Number.isFinite(n)&&n>=0?n:NaN;};
+  existing.forEach(c=>{
+    const values=datasetRows.map(r=>parse(r,c.name)).filter(Number.isFinite);
+    stats[c.key]={...c,values,mean:values.length?values.reduce((a,b)=>a+b,0)/values.length:NaN};
+    const el=$( "llm"+c.key[0].toUpperCase()+c.key.slice(1) );
+    if(el)el.textContent=Number.isFinite(stats[c.key].mean)?(stats[c.key].mean*1000).toFixed(2)+" ms":"No data";
+  });
+  const evaluate=(key,inputId,complianceId,countId)=>{
+    const s=stats[key], limitMs=Number($(inputId).value);
+    if(!s||!s.values.length||!(limitMs>0)){
+      $(complianceId).textContent="N/A";$(countId).textContent="Missing column/data or invalid limit";return;
+    }
+    const within=s.values.filter(v=>v*1000<=limitMs).length;
+    $(complianceId).textContent=(within/s.values.length*100).toFixed(2)+"%";
+    $(countId).textContent=within.toLocaleString()+" of "+s.values.length.toLocaleString()+" snapshots at or below "+limitMs+" ms";
+  };
+  evaluate("ttft95","ttftSlaMs","llmTtftCompliance","llmTtftCount");
+  evaluate("tpot95","tpotSlaMs","llmTpotCompliance","llmTpotCount");
+  const note=$("llmLatencyNote");
+  note.textContent=existing.length<6
+    ?"Some expected TTFT/TPOT percentile columns are absent. Found: "+(existing.map(c=>c.name).join(", ")||"none")+". Check the CSV header."
+    :"Values are interpreted as seconds from the “_s” suffix and displayed in milliseconds. Compliance is the share of snapshots whose reported P95 is under the configured limit, not request-level SLA compliance. Verify units against source documentation.";
+  if(llmLatencyChart)llmLatencyChart.destroy();
+  if(existing.length){
+    llmLatencyChart=new Chart($("llmLatencyChart"),{type:"bar",data:{labels:existing.map(c=>c.label),datasets:[{label:"Mean of reported percentile snapshots (ms)",data:existing.map(c=>Number.isFinite(stats[c.key].mean)?stats[c.key].mean*1000:null),backgroundColor:existing.map(c=>c.key.startsWith("ttft")?"#287cff":"#b35cff"),borderRadius:4}]},options:baseChartOptions("Mean reported latency (ms)","Metric")});
+  }
+}
+$("runLlmSlaBtn")?.addEventListener("click",renderLlmLatencyAnalysis);
+
 // Deployment refresh: dashboard uses the four implemented API endpoints.
