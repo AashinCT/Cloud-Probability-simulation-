@@ -365,29 +365,8 @@ function renderAdditionalStatisticsGraphs(){
       scales:{x:{ticks:{color:"#8fa8ca",maxRotation:45,minRotation:0,autoSkip:true},grid:{display:false}},y:{beginAtZero:true,ticks:{color:"#8fa8ca",precision:0},grid:{color:"#173252"},title:{display:true,text:"Number of rows",color:"#8fa8ca"}}}
     });
   });
-  // Five-number summary scatter plot; y-axis labels use integer row indices to avoid blank/undefined ticks.
-  if(numeric.length){
-    const percentileLocal=(a,p)=>{const x=(a.length-1)*p,l=Math.floor(x),u=Math.ceil(x);return a[l]+(a[u]-a[l])*(x-l)};
-    const rows=numeric.map(o=>{
-      const a=o.v.filter(Number.isFinite).sort((x,y)=>x-y);
-      return {h:o.h,min:a[0],q1:percentileLocal(a,.25),med:percentileLocal(a,.5),q3:percentileLocal(a,.75),max:a[a.length-1]};
-    }).filter(r=>[r.min,r.q1,r.med,r.q3,r.max].every(Number.isFinite));
-    cv=addCard("Five-number summaries","Minimum, Q1, median, Q3 and maximum for each numeric feature.","statsFiveNumberChart",Math.max(320,rows.length*38));
-    mk(cv.id,"scatter",{datasets:[
-      {label:"Minimum",data:rows.map((r,i)=>({x:r.min,y:i})),backgroundColor:"#ff987a",pointRadius:4},
-      {label:"Q1",data:rows.map((r,i)=>({x:r.q1,y:i})),backgroundColor:"#ffc857",pointRadius:4},
-      {label:"Median",data:rows.map((r,i)=>({x:r.med,y:i})),backgroundColor:"#28d8c3",pointRadius:5},
-      {label:"Q3",data:rows.map((r,i)=>({x:r.q3,y:i})),backgroundColor:"#6e9bff",pointRadius:4},
-      {label:"Maximum",data:rows.map((r,i)=>({x:r.max,y:i})),backgroundColor:"#c18bff",pointRadius:4}
-    ]},{
-      parsing:false,
-      scales:{
-        x:{type:"linear",title:{display:true,text:"Observed feature value",color:"#8fa8ca"},ticks:{color:"#8fa8ca",maxTicksLimit:8},grid:{color:"#173252"}},
-        y:{type:"linear",reverse:true,min:-.5,max:rows.length-.5,afterBuildTicks:axis=>{axis.ticks=rows.map((r,i)=>({value:i}));},ticks:{stepSize:1,color:"#b7c9e2",callback:value=>rows[Math.round(Number(value))]?.h??""},grid:{color:"#173252"}}
-      },
-      plugins:{tooltip:{callbacks:{title:items=>rows[Math.round(items[0].parsed.y)]?.h??"Feature",label:item=>item.dataset.label+": "+fmtNumber(item.parsed.x)}}}
-    });
-  }
+  // Five-number summary graph removed by request.
+
   // Correlation matrix for up to 12 numeric columns to keep labels legible.
   const corrCols=numeric.slice(0,12);
   if(corrCols.length>=2){
