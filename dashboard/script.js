@@ -509,24 +509,67 @@ function renderAdditionalStatisticsGraphs(){
 }
 
 function renderAllFeatureStatistics(){
-  const tbody=$("allFeatureStatsTable").querySelector("tbody");
+  const table=$("allFeatureStatsTable");
+  if(!table) return;
+  const tbody=table.querySelector("tbody");
+  if(!tbody) return;
   const fmt=v=>Number.isFinite(v)?fmtNumber(v):"—";
   tbody.innerHTML="";
   datasetHeaders.forEach(h=>{
-    const raw=datasetRows.map(r=>{const s=String(r[h]??"").trim().replace(/,/g,"");return s===""?NaN:Number(s);});
-    const valid=raw.filter(Number.isFinite), missing=raw.length-valid.length;
-    const numeric=valid.length>0 && valid.length>=Math.max(3,Math.floor(raw.length*.5));
+    const raw=datasetRows.map(r=>String(r[h]??"").trim());
+    const nonMissing=raw.filter(v=>v!=="");
+    const missing=raw.length-nonMissing.length;
+    const parsed=nonMissing.map(s=>{
+      const normalized=s.replace(/,/g,"");
+      return normalized!=="" && Number.isFinite(Number(normalized)) ? Number(normalized) : NaN;
+    });
+    // Treat a feature as numeric only when every non-missing value parses as a finite number.
+    // This avoids reporting misleading numeric statistics for mixed or categorical columns.
+    const numeric=nonMissing.length>0 && parsed.every(Number.isFinite);
+    const unique=new Set(nonMissing).size;
     let st={};
     if(numeric){
-      const sorted=[...valid].sort((a,b)=>a-b), n=valid.length, mean=valid.reduce((a,b)=>a+b,0)/n;
-      const variance=n>1?valid.reduce((a,b)=>a+(b-mean)**2,0)/(n-1):NaN, sd=Math.sqrt(variance);
+      const sorted=[...parsed].sort((a,b)=>a-b), n=sorted.length;
+      const mean=sorted.reduce((a,b)=>a+b,0)/n;
+      // Population variance: divide by N because this table describes the complete loaded dataset.
+      const m2=sorted.reduce((a,b)=>a+(b-mean)**2,0)/n;
+      const variance=m2, sd=Math.sqrt(variance);
       const q=p=>percentile(sorted,p), q1=q(.25), median=q(.5), q3=q(.75), iqr=q3-q1;
-      const m2=valid.reduce((a,b)=>a+(b-mean)**2,0)/n, m3=valid.reduce((a,b)=>a+(b-mean)**3,0)/n, m4=valid.reduce((a,b)=>a+(b-mean)**4,0)/n;
-      st={n,mean,median,sd,variance,min:sorted[0],q1,q3,max:sorted[n-1],skew:m2>0?m3/Math.pow(m2,1.5):0,kurt:m2>0?m4/(m2*m2)-3:0,outliers:valid.filter(v=>v<q1-1.5*iqr||v>q3+1.5*iqr).length};
+      const m3=sorted.reduce((a,b)=>a+(b-mean)**3,0)/n;
+      const m4=sorted.reduce((a,b)=>a+(b-mean)**4,0)/n;
+      st={mean,median,sd,variance,min:sorted[0],q1,q3,max:sorted[n-1],
+        skew:m2>0?m3/Math.pow(m2,1.5):0,
+        // Excess kurtosis: normal-distribution reference value is 0.
+        kurt:m2>0?m4/(m2*m2)-3:0,
+        outliers:sorted.filter(v=>v<q1-1.5*iqr||v>q3+1.5*iqr).length};
     }
-    const tr=document.createElement("tr");tr.style.borderTop="1px solid #17304f";
-    const cells=[h,numeric?"Numeric":"Categorical",numeric?st.n:raw.filter(v=>String(v??"").trim()!=="").length,missing,new Set(datasetRows.map(r=>String(r[h]??"").trim()).filter(v=>v!=="")).size,numeric?fmt(st.mean):"—",numeric?fmt(st.median):"—",numeric?fmt(st.sd):"—",numeric?fmt(st.variance):"—",numeric?fmt(st.min):"—",numeric?fmt(st.q1):"—",numeric?fmt(st.q3):"—",numeric?fmt(st.max):"—",numeric?fmt(st.skew):"—",numeric?fmt(st.kurt):"—",numeric?st.outliers.toLocaleString():"—"];
-    cells.forEach((v,i)=>{const td=document.createElement("td");td.textContent=v;td.style.cssText="padding:8px 9px;color:#c5d5ec;white-space:nowrap";if(i===0)td.style.color="#fff";tr.appendChild(td);});
+    const tr=document.createElement("tr");
+    tr.style.borderTop="1px solid #17304f";
+    const cells=[
+      h,
+      numeric?"Numeric":(nonMissing.length?"Categorical":"Unknown"),
+      nonMissing.length,
+      missing,
+      unique,
+      numeric?fmt(st.mean):"—",
+      numeric?fmt(st.median):"—",
+      numeric?fmt(st.sd):"—",
+      numeric?fmt(st.variance):"—",
+      numeric?fmt(st.min):"—",
+      numeric?fmt(st.q1):"—",
+      numeric?fmt(st.q3):"—",
+      numeric?fmt(st.max):"—",
+      numeric?fmt(st.skew):"—",
+      numeric?fmt(st.kurt):"—",
+      numeric?st.outliers.toLocaleString():"—"
+    ];
+    cells.forEach((v,i)=>{
+      const td=document.createElement("td");
+      td.textContent=v;
+      td.style.cssText="padding:8px 9px;color:#c5d5ec;white-space:nowrap";
+      if(i===0) td.style.color="#fff";
+      tr.appendChild(td);
+    });
     tbody.appendChild(tr);
   });
 }
