@@ -348,6 +348,22 @@ function renderAdditionalStatisticsGraphs(){
   const missing=datasetHeaders.map(h=>datasetRows.filter(r=>String(r[h]??"").trim()==="").length);
   let cv=addCard("Missing Values by Feature","Counts of blank cells in every column.","statsMissingChart",300);
   mk(cv.id,"bar",{labels:datasetHeaders,datasets:[{label:"Missing values",data:missing,backgroundColor:"#ff987a"}]},{indexAxis:"y",scales:{x:{beginAtZero:true,ticks:{color:"#8fa8ca"},grid:{color:"#173252"}},y:{ticks:{color:"#8fa8ca"},grid:{color:"#173252"}}}});
+  // Compare pre-aggregated latency percentiles when the dataset provides them.
+  const percentileCols = [
+    {label:"P50", h:datasetHeaders.find(h=>/(^|[^a-z0-9])p50([^a-z0-9]|$)|median/i.test(h))},
+    {label:"P95", h:datasetHeaders.find(h=>/(^|[^a-z0-9])p95([^a-z0-9]|$)/i.test(h))},
+    {label:"P99", h:datasetHeaders.find(h=>/(^|[^a-z0-9])p99([^a-z0-9]|$)/i.test(h))}
+  ].filter(x=>x.h);
+  if(percentileCols.length >= 2){
+    const averages=percentileCols.map(x=>{
+      const vals=clean(x.h).filter(Number.isFinite);
+      return vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : 0;
+    });
+    cv=addCard("Latency Percentile Comparison","Mean of the available P50/P95/P99 summary columns across dataset rows. Confirm units in the source documentation.","statsPercentileCompare",300);
+    mk(cv.id,"bar",{labels:percentileCols.map(x=>x.label),datasets:[{label:"Mean reported value",data:averages,backgroundColor:["#28d8c3","#287cff","#b35cff"].slice(0,percentileCols.length),borderRadius:4}]},{
+      scales:{x:{ticks:{color:"#8fa8ca"},grid:{display:false}},y:{beginAtZero:true,ticks:{color:"#8fa8ca"},grid:{color:"#173252"},title:{display:true,text:"Mean reported value (source units)",color:"#8fa8ca"}}}
+    });
+  }
   // Numeric histograms: handle constant columns, missing values, and readable axis labels safely.
   numeric.forEach((o,index)=>{
     const vals=o.v.filter(Number.isFinite), sorted=[...vals].sort((a,b)=>a-b);
