@@ -318,6 +318,79 @@ $("datasetFile").addEventListener("change",async event=>{
 });
 $("analyzeDatasetBtn").addEventListener("click",analyzeDataset);
 $("latencyColumn").addEventListener("change",()=>{$("datasetResults").hidden=true;});
+
+// Extra Statistics visualizations: generated from the full dataset, not hard-coded sample values.
+let extraStatsCharts=[];
+function renderAdditionalStatisticsGraphs(){
+  const root=$("datasetResults");
+  if(!root || !datasetRows.length || !datasetHeaders.length) return;
+  extraStatsCharts.forEach(c=>{try{c.destroy()}catch(e){}});
+  extraStatsCharts=[];
+  let section=$("additionalStatsGraphs");
+  if(!section){
+    section=document.createElement("section"); section.id="additionalStatsGraphs";
+    section.innerHTML='<div class="panel dataset-upload-panel"><div class="panel-head"><div><h2>Complete Dataset Visualizations</h2><p>Graphs are selected automatically based on the columns and data types available.</p></div></div><div id="additionalStatsGrid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px"></div></div>';
+    const summary=root.querySelector(".dataset-summary");
+    root.insertBefore(section,summary||root.firstChild);
+  }
+  const grid=$("additionalStatsGrid"); grid.innerHTML="";
+  const addCard=(title,description,id,height=270)=>{
+    const card=document.createElement("div"); card.className="panel";
+    card.innerHTML='<div class="panel-head"><div><h2>'+title+'</h2><p>'+description+'</p></div></div><div style="height:'+height+'px;position:relative"><canvas id="'+id+'"></canvas></div>';
+    grid.appendChild(card); return $(id);
+  };
+  const clean=h=>datasetRows.map(r=>{const x=String(r[h]??"").trim().replace(/,/g,"");return x===""?NaN:Number(x)});
+  const numeric=datasetHeaders.map(h=>({h,v:clean(h)})).filter(o=>o.v.filter(Number.isFinite).length>=Math.max(3,Math.floor(datasetRows.length*.5)));
+  const categorical=datasetHeaders.filter(h=>!numeric.some(o=>o.h===h));
+  const options={responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:"#9fb7da"}},tooltip:{enabled:true}},scales:{x:{ticks:{color:"#8fa8ca",maxRotation:55,minRotation:0},grid:{color:"#173252"}},y:{ticks:{color:"#8fa8ca"},grid:{color:"#173252"}}}};
+  const mk=(id,type,data,opts={})=>{const c=new Chart($(id),{type,data,options:{...options,...opts}});extraStatsCharts.push(c);return c;};
+  // Missingness across every feature.
+  const missing=datasetHeaders.map(h=>datasetRows.filter(r=>String(r[h]??"").trim()==="").length);
+  let cv=addCard("Missing Values by Feature","Counts of blank cells in every column.","statsMissingChart",300);
+  mk(cv.id,"bar",{labels:datasetHeaders,datasets:[{label:"Missing values",data:missing,backgroundColor:"#ff987a"}]},{indexAxis:"y",scales:{x:{beginAtZero:true,ticks:{color:"#8fa8ca"},grid:{color:"#173252"}},y:{ticks:{color:"#8fa8ca"},grid:{color:"#173252"}}}});
+  // Numeric distributions, one histogram per numeric column (limit is visual layout only, not stats table).
+  numeric.forEach((o,index)=>{
+    const vals=o.v.filter(Number.isFinite), sorted=[...vals].sort((a,b)=>a-b);
+    const min=sorted[0],max=sorted[sorted.length-1],bins=Math.min(20,Math.max(5,Math.ceil(Math.sqrt(vals.length)))),width=(max-min)||1,counts=Array(bins).fill(0);
+    vals.forEach(v=>counts[Math.min(bins-1,Math.floor((v-min)/width*bins))]++);
+    const labels=counts.map((_,i)=>(min+width*i/bins).toPrecision(4)+"–"+(min+width*(i+1)/bins).toPrecision(4));
+    cv=addCard("Distribution: "+o.h,"Histogram of observed numeric values.", "statsHist"+index,250);
+    mk(cv.id,"bar",{labels,datasets:[{label:"Rows",data:counts,backgroundColor:"#28d8c3"}]});
+  });
+  // Box-plot-style five-number summary graph (min, Q1, median, Q3, max).
+  if(numeric.length){
+    const percentileLocal=(a,p)=>{const x=(a.length-1)*p,l=Math.floor(x),u=Math.ceil(x);return a[l]+(a[u]-a[l])*(x-l)};
+    const rows=numeric.map(o=>{const a=o.v.filter(Number.isFinite).sort((x,y)=>x-y);return {h:o.h,min:a[0],q1:percentileLocal(a,.25),med:percentileLocal(a,.5),q3:percentileLocal(a,.75),max:a[a.length-1]};});
+    cv=addCard("Five-number summaries","Minimum, Q1, median, Q3 and maximum for numeric features.","statsFiveNumberChart",Math.max(280,rows.length*34));
+    // Use five point series so each statistic is visible for each feature.
+    mk(cv.id,"scatter",{datasets:[
+      {label:"Minimum",data:rows.map((r,i)=>({x:r.min,y:i})),backgroundColor:"#ff987a",pointRadius:4},
+      {label:"Q1",data:rows.map((r,i)=>({x:r.q1,y:i})),backgroundColor:"#ffc857",pointRadius:4},
+      {label:"Median",data:rows.map((r,i)=>({x:r.med,y:i})),backgroundColor:"#28d8c3",pointRadius:5},
+      {label:"Q3",data:rows.map((r,i)=>({x:r.q3,y:i})),backgroundColor:"#6e9bff",pointRadius:4},
+      {label:"Maximum",data:rows.map((r,i)=>({x:r.max,y:i})),backgroundColor:"#c18bff",pointRadius:4}
+    ]},{scales:{x:{type:"linear",title:{display:true,text:"Feature value",color:"#8fa8ca"},ticks:{color:"#8fa8ca"},grid:{color:"#173252"}},y:{type:"linear",reverse:true,min:-.5,max:rows.length-.5,ticks:{stepSize:1,color:"#8fa8ca",callback:v=>rows[v]?.h??""},grid:{color:"#173252"}}}});
+  }
+  // Correlation matrix for up to 12 numeric columns to keep labels legible.
+  const corrCols=numeric.slice(0,12);
+  if(corrCols.length>=2){
+    const corr=(a,b)=>{const pairs=a.map((x,i)=>[x,b[i]]).filter(p=>Number.isFinite(p[0])&&Number.isFinite(p[1]));if(pairs.length<3)return NaN;const ma=pairs.reduce((s,p)=>s+p[0],0)/pairs.length,mb=pairs.reduce((s,p)=>s+p[1],0)/pairs.length;let n=0,da=0,db=0;pairs.forEach(p=>{n+=(p[0]-ma)*(p[1]-mb);da+=(p[0]-ma)**2;db+=(p[1]-mb)**2});return da&&db?n/Math.sqrt(da*db):0};
+    cv=addCard("Numeric Correlation Matrix","Pearson correlation between numeric features (first 12 numeric columns).","statsCorrelationChart",Math.max(320,corrCols.length*34));
+    const canvas=cv,ctx=canvas.getContext("2d"),dpr=window.devicePixelRatio||1,w=canvas.clientWidth,h=canvas.clientHeight;
+    canvas.width=w*dpr;canvas.height=h*dpr;ctx.scale(dpr,dpr);ctx.fillStyle="#0b1728";ctx.fillRect(0,0,w,h);
+    const left=115,top=18,cell=Math.min((w-left-8)/corrCols.length,(h-top-8)/corrCols.length,42);
+    corrCols.forEach((a,i)=>{corrCols.forEach((b,j)=>{const r=corr(a.v,b.v),v=Number.isFinite(r)?r:0;ctx.fillStyle=v>=0?"rgba(40,216,195,"+(0.12+Math.abs(v)*.78)+")":"rgba(255,126,150,"+(0.12+Math.abs(v)*.78)+")";ctx.fillRect(left+j*cell,top+i*cell,cell-2,cell-2);ctx.fillStyle="#eef5ff";ctx.font="10px Inter, sans-serif";ctx.textAlign="center";ctx.fillText(Number.isFinite(r)?r.toFixed(2):"—",left+j*cell+(cell-2)/2,top+i*cell+cell/2+3)});ctx.save();ctx.translate(left-7,top+i*cell+cell/2);ctx.rotate(-.25);ctx.textAlign="right";ctx.fillStyle="#b7c9e2";ctx.font="10px Inter, sans-serif";ctx.fillText(a.h,0,0);ctx.restore();});
+  }
+  // Top category frequencies for categorical fields (up to 6 fields).
+  categorical.slice(0,6).forEach((h,index)=>{
+    const freq=new Map();datasetRows.forEach(r=>{const v=String(r[h]??"").trim()||"(missing)";freq.set(v,(freq.get(v)||0)+1)});
+    const top=[...freq.entries()].sort((a,b)=>b[1]-a[1]).slice(0,10);
+    cv=addCard("Category Frequency: "+h,"Top 10 most common values.","statsCategory"+index,270);
+    mk(cv.id,"bar",{labels:top.map(x=>x[0]),datasets:[{label:"Count",data:top.map(x=>x[1]),backgroundColor:"#7f8cff"}]},{indexAxis:"y",scales:{x:{beginAtZero:true,ticks:{color:"#8fa8ca"},grid:{color:"#173252"}},y:{ticks:{color:"#8fa8ca"},grid:{color:"#173252"}}}});
+  });
+  if(!numeric.length && !categorical.length) grid.textContent="No graphable columns were found.";
+}
+
 function renderAllFeatureStatistics(){
   const tbody=$("allFeatureStatsTable").querySelector("tbody");
   const fmt=v=>Number.isFinite(v)?fmtNumber(v):"—";
@@ -356,7 +429,7 @@ async function loadBundledDataset(){
     $("latencyUnit").value=/(_s|seconds?|time.?s)$/i.test(select.value)?"s":"ms";
     $("datasetControls").hidden=false;$("datasetResults").hidden=false;
     $("datasetMessage").textContent="Loaded repository dataset · "+datasetRows.length.toLocaleString()+" rows · "+datasetHeaders.length+" features. Full feature statistics are shown below.";
-    renderAllFeatureStatistics();analyzeDataset();
+    renderAllFeatureStatistics();renderAdditionalStatisticsGraphs();analyzeDataset();
   }catch(err){$("datasetMessage").textContent="Could not load repository dataset automatically: "+err.message+" Check GitHub Pages deployment and data/sofie.csv.";}
 }
 function analyzeDataset(){
