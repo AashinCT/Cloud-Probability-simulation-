@@ -381,6 +381,24 @@ function renderAdditionalStatisticsGraphs(){
       scales:{x:{ticks:{color:"#8fa8ca",maxRotation:45,minRotation:0,autoSkip:true},grid:{display:false}},y:{beginAtZero:true,ticks:{color:"#8fa8ca",precision:0},grid:{color:"#173252"},title:{display:true,text:"Number of rows",color:"#8fa8ca"}}}
     });
   });
+  // IQR outlier counts per numeric feature (not a five-number-summary chart).
+  const outlierFeatures=numeric.map(o=>{
+    const vals=o.v.filter(Number.isFinite).sort((a,b)=>a-b);
+    if(vals.length<4) return null;
+    const q1=percentile(vals,.25), q3=percentile(vals,.75), iqr=q3-q1;
+    const low=q1-1.5*iqr, high=q3+1.5*iqr;
+    const count=vals.filter(v=>v<low||v>high).length;
+    return {label:o.h,count,valid:vals.length,rate:count/vals.length};
+  }).filter(Boolean).sort((a,b)=>b.count-a.count).slice(0,15);
+  if(outlierFeatures.some(x=>x.count>0)){
+    cv=addCard("Potential Outliers by Feature","Top 15 numeric features by values outside 1.5×IQR fences. This flags unusual values for review; it does not prove errors.","statsOutlierChart",340);
+    mk(cv.id,"bar",{labels:outlierFeatures.map(x=>x.label),datasets:[{label:"Potential outlier rows",data:outlierFeatures.map(x=>x.count),backgroundColor:"#ff987a",borderRadius:3}]},{
+      indexAxis:"y",
+      plugins:{tooltip:{callbacks:{afterLabel:ctx=>{const x=outlierFeatures[ctx.dataIndex];return x?("Valid values: "+x.valid.toLocaleString()+" | Outlier rate: "+(x.rate*100).toFixed(2)+"%"):"";}}}},
+      scales:{x:{beginAtZero:true,ticks:{color:"#8fa8ca",precision:0},grid:{color:"#173252"},title:{display:true,text:"Rows outside IQR fences",color:"#8fa8ca"}},y:{ticks:{color:"#8fa8ca"},grid:{display:false}}}
+    });
+  }
+
   // Five-number summary graph removed by request.
 
   // Numeric correlation visualization removed by request.
