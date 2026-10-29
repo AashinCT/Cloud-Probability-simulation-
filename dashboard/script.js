@@ -284,6 +284,14 @@ function showMode(mode){
   if(!datasetState.active) loadDashboard();
 }
 document.querySelectorAll(".nav-item[data-view]").forEach(b=>b.addEventListener("click",()=>showMode(b.dataset.view)));
+// Statistics opens the dataset statistics workspace; the Dataset Analysis button remains available separately.
+$("statisticsNav").addEventListener("click",()=>{
+  showMode("dataset");
+  document.querySelectorAll(".nav-item").forEach(b=>b.classList.remove("active"));
+  $("statisticsNav").classList.add("active");
+  const target = $("datasetResults").hidden ? document.querySelector(".dataset-upload-panel") : $("datasetResults");
+  target.scrollIntoView({behavior:"smooth",block:"start"});
+});
 $("datasetFile").addEventListener("change",async event=>{
   const file=event.target.files && event.target.files[0]; if(!file)return;
   try{
