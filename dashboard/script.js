@@ -24,13 +24,13 @@ function updateClock() {
 setInterval(updateClock, 1000);
 updateClock();
 
-function baseChartOptions(yTitle) {
+function baseChartOptions(yTitle, xTitle="Observation") {
   return {
     responsive:true, maintainAspectRatio:false,
     plugins:{legend:{labels:{color:"#9fb7da",font:{size:10}}}},
     scales:{
-      x:{ticks:{color:"#6f89ad",font:{size:9}},grid:{color:"#173252"}},
-      y:{ticks:{color:"#6f89ad",font:{size:9}},grid:{color:"#173252"},title:{display:true,text:yTitle,color:"#7894b9",font:{size:9}}}
+      x:{title:{display:true,text:xTitle,color:"#7894b9",font:{size:10}},ticks:{color:"#6f89ad",font:{size:9},autoSkip:true,maxRotation:45,minRotation:0},grid:{color:"#173252"}},
+      y:{title:{display:true,text:yTitle,color:"#7894b9",font:{size:10}},ticks:{color:"#6f89ad",font:{size:9}},grid:{color:"#173252"}}
     }
   };
 }
@@ -44,7 +44,7 @@ function renderCharts(data) {
   historyChart = new Chart($("historyChart"), {
     type:"line",
     data:{labels,datasets:[{label:"Response Time",data:valuesMs,borderColor:"#2c80ff",backgroundColor:"rgba(44,128,255,.12)",fill:true,tension:.28,pointRadius:2,pointBackgroundColor:"#56a0ff"}]},
-    options:baseChartOptions("Milliseconds")
+    options:baseChartOptions("Response time (ms)","Request sequence")
   });
 
   const max = Math.max(...data, SLA_LIMIT);
@@ -58,7 +58,7 @@ function renderCharts(data) {
   distributionBars = new Chart($("distributionBars"), {
     type:"bar",
     data:{labels:labelsBins,datasets:[{label:"Requests",data:counts,backgroundColor:"#287cff",borderRadius:3}]},
-    options:baseChartOptions("Requests")
+    options:baseChartOptions("Request count","Response-time range (ms)")
   });
 
   const lambda = 1 / (data.reduce((a,b)=>a+b,0)/data.length);
@@ -69,7 +69,7 @@ function renderCharts(data) {
   distributionChart = new Chart($("distributionChart"), {
     type:"line",
     data:{labels:points.map(x=>(x*1000).toFixed(0)),datasets:[{label:"Exponential fit",data:fit,borderColor:"#c05cff",borderWidth:2,pointRadius:0,tension:.25}]},
-    options:{...baseChartOptions("Probability density"),scales:{...baseChartOptions("Probability density").scales,x:{...baseChartOptions("Probability density").scales.x,title:{display:true,text:"Response time (ms)",color:"#7894b9",font:{size:9}}}}}
+    options:baseChartOptions("Probability density (1/second)","Response time (ms)")
   });
 }
 
@@ -84,7 +84,7 @@ function renderServerCharts(records) {
     responsive:true, maintainAspectRatio:false,
     plugins:{legend:{labels:{color:"#9fb7da",font:{size:10}}}},
     scales:{
-      x:{title:{display:true,text:"Server metric (%)",color:"#7894b9",font:{size:9}},ticks:{color:"#6f89ad",font:{size:9}},grid:{color:"#173252"}},
+      x:{title:{display:true,text:"Resource utilisation (%)",color:"#7894b9",font:{size:10}},ticks:{color:"#6f89ad",font:{size:9}},grid:{color:"#173252"}},
       y:{title:{display:true,text:"Response time (ms)",color:"#7894b9",font:{size:9}},ticks:{color:"#6f89ad",font:{size:9}},grid:{color:"#173252"}}
     }
   };
@@ -194,7 +194,7 @@ async function loadDashboard() {
         responsive:true,
         maintainAspectRatio:false,
         scales:{
-          x:{ticks:{color:"#9fb7da",font:{size:9}},grid:{color:"#173252"}},
+          x:{title:{display:true,text:"SLA outcome",color:"#7894b9",font:{size:10}},ticks:{color:"#9fb7da",font:{size:9}},grid:{color:"#173252"}},
           y:{min:0,max:100,ticks:{color:"#6f89ad",font:{size:9},callback:value=>value+"%"},grid:{color:"#173252"},title:{display:true,text:"Percentage",color:"#7894b9",font:{size:9}}}
         },
         plugins:{
@@ -437,12 +437,12 @@ function renderAdditionalStatisticsGraphs(){
   const clean=h=>datasetRows.map(r=>{const x=String(r[h]??"").trim().replace(/,/g,"");return x===""?NaN:Number(x)});
   const numeric=datasetHeaders.map(h=>({h,v:clean(h)})).filter(o=>o.v.filter(Number.isFinite).length>=Math.max(3,Math.floor(datasetRows.length*.5)));
   const categorical=datasetHeaders.filter(h=>!numeric.some(o=>o.h===h));
-  const options={responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:"#9fb7da"}},tooltip:{enabled:true}},scales:{x:{ticks:{color:"#8fa8ca",maxRotation:55,minRotation:0},grid:{color:"#173252"}},y:{ticks:{color:"#8fa8ca"},grid:{color:"#173252"}}}};
+  const options={responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:"#9fb7da"}},tooltip:{enabled:true}},scales:{x:{title:{display:true,text:"Category / feature",color:"#8fa8ca"},ticks:{color:"#8fa8ca",maxRotation:55,minRotation:0,autoSkip:true},grid:{color:"#173252"}},y:{title:{display:true,text:"Value / count",color:"#8fa8ca"},ticks:{color:"#8fa8ca"},grid:{color:"#173252"}}}};
   const mk=(id,type,data,opts={})=>{const c=new Chart($(id),{type,data,options:{...options,...opts}});extraStatsCharts.push(c);return c;};
   // Missingness across every feature.
   const missing=datasetHeaders.map(h=>datasetRows.filter(r=>String(r[h]??"").trim()==="").length);
   let cv=addCard("Missing Values by Feature","Counts of blank cells in every column.","statsMissingChart",300);
-  mk(cv.id,"bar",{labels:datasetHeaders,datasets:[{label:"Missing values",data:missing,backgroundColor:"#ff987a"}]},{indexAxis:"y",scales:{x:{beginAtZero:true,ticks:{color:"#8fa8ca"},grid:{color:"#173252"}},y:{ticks:{color:"#8fa8ca"},grid:{color:"#173252"}}}});
+  mk(cv.id,"bar",{labels:datasetHeaders,datasets:[{label:"Missing values",data:missing,backgroundColor:"#ff987a"}]},{indexAxis:"y",scales:{x:{beginAtZero:true,title:{display:true,text:"Number of missing cells",color:"#8fa8ca"},ticks:{color:"#8fa8ca"},grid:{color:"#173252"}},y:{title:{display:true,text:"Dataset feature",color:"#8fa8ca"},ticks:{color:"#8fa8ca"},grid:{color:"#173252"}}}});
   // Compare pre-aggregated latency percentiles when the dataset provides them.
   const percentileCols = [
     {label:"P50", h:datasetHeaders.find(h=>/(^|[^a-z0-9])p50([^a-z0-9]|$)|median/i.test(h))},
@@ -456,7 +456,7 @@ function renderAdditionalStatisticsGraphs(){
     });
     cv=addCard("Latency Percentile Comparison","Mean of the available P50/P95/P99 summary columns across dataset rows. Confirm units in the source documentation.","statsPercentileCompare",300);
     mk(cv.id,"bar",{labels:percentileCols.map(x=>x.label),datasets:[{label:"Mean reported value",data:averages,backgroundColor:["#28d8c3","#287cff","#b35cff"].slice(0,percentileCols.length),borderRadius:4}]},{
-      scales:{x:{ticks:{color:"#8fa8ca"},grid:{display:false}},y:{beginAtZero:true,ticks:{color:"#8fa8ca"},grid:{color:"#173252"},title:{display:true,text:"Mean reported value (source units)",color:"#8fa8ca"}}}
+      scales:{x:{title:{display:true,text:"Latency percentile",color:"#8fa8ca"},ticks:{color:"#8fa8ca"},grid:{display:false}},y:{beginAtZero:true,ticks:{color:"#8fa8ca"},grid:{color:"#173252"},title:{display:true,text:"Mean reported value (source units)",color:"#8fa8ca"}}}
     });
   }
   // Numeric histograms: handle constant columns, missing values, and readable axis labels safely.
@@ -473,7 +473,7 @@ function renderAdditionalStatisticsGraphs(){
     const labels=counts.map((_,i)=>min===max?fmtNumber(min):(fmtNumber(min+width*i)+"–"+fmtNumber(i===bins-1?max:min+width*(i+1))));
     cv=addCard("Distribution: "+o.h,"Histogram of "+vals.length.toLocaleString()+" valid numeric values.","statsHist"+index,260);
     mk(cv.id,"bar",{labels,datasets:[{label:"Row count",data:counts,backgroundColor:"#28d8c3",borderColor:"#28d8c3",borderWidth:1,borderRadius:3}]},{
-      scales:{x:{ticks:{color:"#8fa8ca",maxRotation:45,minRotation:0,autoSkip:true},grid:{display:false}},y:{beginAtZero:true,ticks:{color:"#8fa8ca",precision:0},grid:{color:"#173252"},title:{display:true,text:"Number of rows",color:"#8fa8ca"}}}
+      scales:{x:{title:{display:true,text:"Numeric value range",color:"#8fa8ca"},ticks:{color:"#8fa8ca",maxRotation:45,minRotation:0,autoSkip:true},grid:{display:false}},y:{beginAtZero:true,ticks:{color:"#8fa8ca",precision:0},grid:{color:"#173252"},title:{display:true,text:"Number of rows",color:"#8fa8ca"}}}
     });
   });
   // IQR outlier counts per numeric feature (not a five-number-summary chart).
@@ -490,7 +490,7 @@ function renderAdditionalStatisticsGraphs(){
     mk(cv.id,"bar",{labels:outlierFeatures.map(x=>x.label),datasets:[{label:"Potential outlier rows",data:outlierFeatures.map(x=>x.count),backgroundColor:"#ff987a",borderRadius:3}]},{
       indexAxis:"y",
       plugins:{tooltip:{callbacks:{afterLabel:ctx=>{const x=outlierFeatures[ctx.dataIndex];return x?("Valid values: "+x.valid.toLocaleString()+" | Outlier rate: "+(x.rate*100).toFixed(2)+"%"):"";}}}},
-      scales:{x:{beginAtZero:true,ticks:{color:"#8fa8ca",precision:0},grid:{color:"#173252"},title:{display:true,text:"Rows outside IQR fences",color:"#8fa8ca"}},y:{ticks:{color:"#8fa8ca"},grid:{display:false}}}
+      scales:{x:{beginAtZero:true,ticks:{color:"#8fa8ca",precision:0},grid:{color:"#173252"},title:{display:true,text:"Rows outside IQR fences",color:"#8fa8ca"}},y:{title:{display:true,text:"Numeric feature",color:"#8fa8ca"},ticks:{color:"#8fa8ca"},grid:{display:false}}}
     });
   }
 
@@ -503,7 +503,7 @@ function renderAdditionalStatisticsGraphs(){
     const freq=new Map();datasetRows.forEach(r=>{const v=String(r[h]??"").trim()||"(missing)";freq.set(v,(freq.get(v)||0)+1)});
     const top=[...freq.entries()].sort((a,b)=>b[1]-a[1]).slice(0,10);
     cv=addCard("Category Frequency: "+h,"Top 10 most common values.","statsCategory"+index,270);
-    mk(cv.id,"bar",{labels:top.map(x=>x[0]),datasets:[{label:"Count",data:top.map(x=>x[1]),backgroundColor:"#7f8cff"}]},{indexAxis:"y",scales:{x:{beginAtZero:true,ticks:{color:"#8fa8ca"},grid:{color:"#173252"}},y:{ticks:{color:"#8fa8ca"},grid:{color:"#173252"}}}});
+    mk(cv.id,"bar",{labels:top.map(x=>x[0]),datasets:[{label:"Count",data:top.map(x=>x[1]),backgroundColor:"#7f8cff"}]},{indexAxis:"y",scales:{x:{beginAtZero:true,title:{display:true,text:"Record count",color:"#8fa8ca"},ticks:{color:"#8fa8ca"},grid:{color:"#173252"}},y:{title:{display:true,text:h,color:"#8fa8ca"},ticks:{color:"#8fa8ca"},grid:{color:"#173252"}}}});
   });
   if(!numeric.length && !categorical.length) grid.textContent="No graphable columns were found.";
 }
@@ -603,13 +603,13 @@ function analyzeDataset(){
   valsMs.forEach(v=>counts[Math.min(bins-1,Math.floor((v-min)/step))]++);
   destroyDatasetCharts();
   const chartText="#9fb7da", grid="#173252";
-  datasetHistoryChart=new Chart($("datasetHistoryChart"),{type:"line",data:{labels:valsMs.map((_,i)=>i+1),datasets:[{label:col+" (ms)",data:valsMs,borderColor:"#2c80ff",backgroundColor:"rgba(44,128,255,.12)",fill:true,tension:.2,pointRadius:1}]},options:baseChartOptions("Milliseconds")});
-  datasetHistogramChart=new Chart($("datasetHistogramChart"),{type:"bar",data:{labels:counts.map((_,i)=>(min+i*step).toFixed(2)+"–"+(min+(i+1)*step).toFixed(2)),datasets:[{label:"Rows",data:counts,backgroundColor:"#28d8c3",borderRadius:3}]},options:baseChartOptions("Rows")});
-  datasetDistributionBars=new Chart($("datasetDistributionBars"),{type:"bar",data:{labels:counts.map((_,i)=>(min+i*step).toFixed(1)+"–"+(min+(i+1)*step).toFixed(1)+" ms"),datasets:[{label:"Requests",data:counts,backgroundColor:"#287cff",borderRadius:3}]},options:baseChartOptions("Requests")});
+  datasetHistoryChart=new Chart($("datasetHistoryChart"),{type:"line",data:{labels:valsMs.map((_,i)=>i+1),datasets:[{label:col+" (ms)",data:valsMs,borderColor:"#2c80ff",backgroundColor:"rgba(44,128,255,.12)",fill:true,tension:.2,pointRadius:1}]},options:baseChartOptions("Latency (ms)","Record sequence")});
+  datasetHistogramChart=new Chart($("datasetHistogramChart"),{type:"bar",data:{labels:counts.map((_,i)=>(min+i*step).toFixed(2)+"–"+(min+(i+1)*step).toFixed(2)),datasets:[{label:"Rows",data:counts,backgroundColor:"#28d8c3",borderRadius:3}]},options:baseChartOptions("Record count","Latency range (ms)")});
+  datasetDistributionBars=new Chart($("datasetDistributionBars"),{type:"bar",data:{labels:counts.map((_,i)=>(min+i*step).toFixed(1)+"–"+(min+(i+1)*step).toFixed(1)+" ms"),datasets:[{label:"Requests",data:counts,backgroundColor:"#287cff",borderRadius:3}]},options:baseChartOptions("Request count","Latency range (ms)")});
   const xmax=Math.max(sorted[n-1],threshold), points=Array.from({length:40},(_,i)=>i*xmax/39);
   datasetModelChart=new Chart($("datasetModelChart"),{type:"line",data:{labels:points.map(x=>(x*1000).toFixed(2)),datasets:[
     {label:"Exponential density (scaled)",data:Number.isFinite(lambda)?points.map(x=>lambda*Math.exp(-lambda*x)*n*(xmax/39)):[],borderColor:"#b35cff",pointRadius:0,borderWidth:2,tension:.2}
-  ]},options:{...baseChartOptions("Scaled density"),scales:{...baseChartOptions("Scaled density").scales,x:{...baseChartOptions("Scaled density").scales.x,title:{display:true,text:"Value (ms)",color:"#7894b9",font:{size:9}}}}}});
+  ]},options:baseChartOptions("Scaled density","Latency (ms)")});
   // Match the live dashboard's response-time-vs-CPU and response-time-vs-RAM scatter charts when those columns exist.
   const normalized=h=>h.toLowerCase().replace(/[^a-z0-9]/g,"");
   const findColumn=patterns=>datasetHeaders.find(h=>patterns.some(p=>p.test(normalized(h))));
@@ -623,7 +623,7 @@ function analyzeDataset(){
     const metric=metricCol?getNumbers(metricCol):[];
     const pts=metric.map((v,i)=>({x:v,y:responseMs[i]})).filter(p=>Number.isFinite(p.x)&&Number.isFinite(p.y));
     $(noteId).textContent=pts.length?("Using "+metricCol+" and "+responseCol+"."):"No suitable "+label+" column found in this CSV; add one to enable this graph.";
-    return new Chart($(canvasId),{type:"scatter",data:{datasets:[{label:"Response time vs "+label,data:pts,backgroundColor:color,borderColor:color,pointRadius:3}]},options:{...baseChartOptions("Response time (ms)"),scales:{x:{title:{display:true,text:label+" (%)",color:"#7894b9",font:{size:9}},ticks:{color:"#6f89ad",font:{size:9}},grid:{color:"#173252"}},y:{title:{display:true,text:"Response time (ms)",color:"#7894b9",font:{size:9}},ticks:{color:"#6f89ad",font:{size:9}},grid:{color:"#173252"}}}}});
+    return new Chart($(canvasId),{type:"scatter",data:{datasets:[{label:"Response time vs "+label,data:pts,backgroundColor:color,borderColor:color,pointRadius:3}]},options:{...baseChartOptions("Response time (ms)","Resource utilisation (%)"),scales:{x:{title:{display:true,text:label+" utilisation (%)",color:"#7894b9",font:{size:10}},ticks:{color:"#6f89ad",font:{size:9}},grid:{color:"#173252"}},y:{title:{display:true,text:"Response time (ms)",color:"#7894b9",font:{size:10}},ticks:{color:"#6f89ad",font:{size:9}},grid:{color:"#173252"}}}}});
   };
   datasetCpuChart=scatter("datasetCpuChart","datasetCpuNote",cpuCol,"CPU","#2c80ff");
   datasetRamChart=scatter("datasetRamChart","datasetRamNote",ramCol,"RAM","#28d8c3");
@@ -631,7 +631,7 @@ function analyzeDataset(){
   datasetSlaChart=new Chart($("datasetSlaChart"),{type:"bar",data:{labels:["SLA compliance","SLA violations"],datasets:[
     {label:"Observed (%)",data:[compliance,100-compliance],backgroundColor:"#287cff"},
     {label:"Exponential model (%)",data:[chartModelCompliance,100-chartModelCompliance],backgroundColor:"#b35cff"}
-  ]},options:{...baseChartOptions("Percent (%)"),scales:{...baseChartOptions("Percent (%)").scales,y:{...baseChartOptions("Percent (%)").scales.y,min:0,max:100}}}});
+  ]},options:{...baseChartOptions("Percent (%)","SLA outcome"),scales:{...baseChartOptions("Percent (%)","SLA outcome").scales,y:{...baseChartOptions("Percent (%)","SLA outcome").scales.y,min:0,max:100}}}});
 }
 
 // Deployment refresh: dashboard uses the four implemented API endpoints.
