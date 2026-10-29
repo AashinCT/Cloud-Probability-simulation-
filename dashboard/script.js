@@ -348,28 +348,45 @@ function renderAdditionalStatisticsGraphs(){
   const missing=datasetHeaders.map(h=>datasetRows.filter(r=>String(r[h]??"").trim()==="").length);
   let cv=addCard("Missing Values by Feature","Counts of blank cells in every column.","statsMissingChart",300);
   mk(cv.id,"bar",{labels:datasetHeaders,datasets:[{label:"Missing values",data:missing,backgroundColor:"#ff987a"}]},{indexAxis:"y",scales:{x:{beginAtZero:true,ticks:{color:"#8fa8ca"},grid:{color:"#173252"}},y:{ticks:{color:"#8fa8ca"},grid:{color:"#173252"}}}});
-  // Numeric distributions, one histogram per numeric column (limit is visual layout only, not stats table).
+  // Numeric histograms: handle constant columns, missing values, and readable axis labels safely.
   numeric.forEach((o,index)=>{
     const vals=o.v.filter(Number.isFinite), sorted=[...vals].sort((a,b)=>a-b);
-    const min=sorted[0],max=sorted[sorted.length-1],bins=Math.min(20,Math.max(5,Math.ceil(Math.sqrt(vals.length)))),width=(max-min)||1,counts=Array(bins).fill(0);
-    vals.forEach(v=>counts[Math.min(bins-1,Math.floor((v-min)/width*bins))]++);
-    const labels=counts.map((_,i)=>(min+width*i/bins).toPrecision(4)+"–"+(min+width*(i+1)/bins).toPrecision(4));
-    cv=addCard("Distribution: "+o.h,"Histogram of observed numeric values.", "statsHist"+index,250);
-    mk(cv.id,"bar",{labels,datasets:[{label:"Rows",data:counts,backgroundColor:"#28d8c3"}]});
+    if(!sorted.length) return;
+    const min=sorted[0],max=sorted[sorted.length-1];
+    const bins=min===max?1:Math.min(20,Math.max(5,Math.ceil(Math.sqrt(vals.length))));
+    const width=(max-min)/bins, counts=Array(bins).fill(0);
+    vals.forEach(v=>{
+      const bin=min===max?0:Math.min(bins-1,Math.max(0,Math.floor((v-min)/width)));
+      counts[bin]++;
+    });
+    const labels=counts.map((_,i)=>min===max?fmtNumber(min):(fmtNumber(min+width*i)+"–"+fmtNumber(i===bins-1?max:min+width*(i+1))));
+    cv=addCard("Distribution: "+o.h,"Histogram of "+vals.length.toLocaleString()+" valid numeric values.","statsHist"+index,260);
+    mk(cv.id,"bar",{labels,datasets:[{label:"Row count",data:counts,backgroundColor:"#28d8c3",borderColor:"#28d8c3",borderWidth:1,borderRadius:3}]},{
+      scales:{x:{ticks:{color:"#8fa8ca",maxRotation:45,minRotation:0,autoSkip:true},grid:{display:false}},y:{beginAtZero:true,ticks:{color:"#8fa8ca",precision:0},grid:{color:"#173252"},title:{display:true,text:"Number of rows",color:"#8fa8ca"}}}
+    });
   });
-  // Box-plot-style five-number summary graph (min, Q1, median, Q3, max).
+  // Five-number summary scatter plot; y-axis labels use integer row indices to avoid blank/undefined ticks.
   if(numeric.length){
     const percentileLocal=(a,p)=>{const x=(a.length-1)*p,l=Math.floor(x),u=Math.ceil(x);return a[l]+(a[u]-a[l])*(x-l)};
-    const rows=numeric.map(o=>{const a=o.v.filter(Number.isFinite).sort((x,y)=>x-y);return {h:o.h,min:a[0],q1:percentileLocal(a,.25),med:percentileLocal(a,.5),q3:percentileLocal(a,.75),max:a[a.length-1]};});
-    cv=addCard("Five-number summaries","Minimum, Q1, median, Q3 and maximum for numeric features.","statsFiveNumberChart",Math.max(280,rows.length*34));
-    // Use five point series so each statistic is visible for each feature.
+    const rows=numeric.map(o=>{
+      const a=o.v.filter(Number.isFinite).sort((x,y)=>x-y);
+      return {h:o.h,min:a[0],q1:percentileLocal(a,.25),med:percentileLocal(a,.5),q3:percentileLocal(a,.75),max:a[a.length-1]};
+    }).filter(r=>[r.min,r.q1,r.med,r.q3,r.max].every(Number.isFinite));
+    cv=addCard("Five-number summaries","Minimum, Q1, median, Q3 and maximum for each numeric feature.","statsFiveNumberChart",Math.max(320,rows.length*38));
     mk(cv.id,"scatter",{datasets:[
       {label:"Minimum",data:rows.map((r,i)=>({x:r.min,y:i})),backgroundColor:"#ff987a",pointRadius:4},
       {label:"Q1",data:rows.map((r,i)=>({x:r.q1,y:i})),backgroundColor:"#ffc857",pointRadius:4},
       {label:"Median",data:rows.map((r,i)=>({x:r.med,y:i})),backgroundColor:"#28d8c3",pointRadius:5},
       {label:"Q3",data:rows.map((r,i)=>({x:r.q3,y:i})),backgroundColor:"#6e9bff",pointRadius:4},
       {label:"Maximum",data:rows.map((r,i)=>({x:r.max,y:i})),backgroundColor:"#c18bff",pointRadius:4}
-    ]},{scales:{x:{type:"linear",title:{display:true,text:"Feature value",color:"#8fa8ca"},ticks:{color:"#8fa8ca"},grid:{color:"#173252"}},y:{type:"linear",reverse:true,min:-.5,max:rows.length-.5,ticks:{stepSize:1,color:"#8fa8ca",callback:v=>rows[v]?.h??""},grid:{color:"#173252"}}}});
+    ]},{
+      parsing:false,
+      scales:{
+        x:{type:"linear",title:{display:true,text:"Observed feature value",color:"#8fa8ca"},ticks:{color:"#8fa8ca",maxTicksLimit:8},grid:{color:"#173252"}},
+        y:{type:"linear",reverse:true,min:-.5,max:rows.length-.5,afterBuildTicks:axis=>{axis.ticks=rows.map((r,i)=>({value:i}));},ticks:{stepSize:1,color:"#b7c9e2",callback:value=>rows[Math.round(Number(value))]?.h??""},grid:{color:"#173252"}}
+      },
+      plugins:{tooltip:{callbacks:{title:items=>rows[Math.round(items[0].parsed.y)]?.h??"Feature",label:item=>item.dataset.label+": "+fmtNumber(item.parsed.x)}}}
+    });
   }
   // Correlation matrix for up to 12 numeric columns to keep labels legible.
   const corrCols=numeric.slice(0,12);
