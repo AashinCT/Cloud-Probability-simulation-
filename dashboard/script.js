@@ -367,21 +367,8 @@ function renderAdditionalStatisticsGraphs(){
   });
   // Five-number summary graph removed by request.
 
-  // Responsive, square-cell Pearson correlation heatmap.
-  const corrCols=numeric.slice(0,12);
-  if(corrCols.length>=2){
-    const corr=(a,b)=>{
-      const n=Math.min(a.length,b.length),pairs=[];
-      for(let i=0;i<n;i++) if(Number.isFinite(a[i])&&Number.isFinite(b[i])) pairs.push([a[i],b[i]]);
-      if(pairs.length<3)return NaN;
-      const ma=pairs.reduce((s,p)=>s+p[0],0)/pairs.length,mb=pairs.reduce((s,p)=>s+p[1],0)/pairs.length;
-      let num=0,da=0,db=0;
-      pairs.forEach(p=>{const x=p[0]-ma,y=p[1]-mb;num+=x*y;da+=x*x;db+=y*y});
-      return da>0&&db>0?num/Math.sqrt(da*db):NaN;
-    };
-    // Numeric Correlation Matrix removed by request.
+  // Numeric correlation visualization removed by request.
 
-  }
   // Top category frequencies for categorical fields (up to 6 fields).
   categorical.slice(0,6).forEach((h,index)=>{
     const freq=new Map();datasetRows.forEach(r=>{const v=String(r[h]??"").trim()||"(missing)";freq.set(v,(freq.get(v)||0)+1)});
