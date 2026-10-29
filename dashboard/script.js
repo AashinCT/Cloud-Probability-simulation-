@@ -367,15 +367,53 @@ function renderAdditionalStatisticsGraphs(){
   });
   // Five-number summary graph removed by request.
 
-  // Correlation matrix for up to 12 numeric columns to keep labels legible.
+  // Responsive, square-cell Pearson correlation heatmap.
   const corrCols=numeric.slice(0,12);
   if(corrCols.length>=2){
-    const corr=(a,b)=>{const pairs=a.map((x,i)=>[x,b[i]]).filter(p=>Number.isFinite(p[0])&&Number.isFinite(p[1]));if(pairs.length<3)return NaN;const ma=pairs.reduce((s,p)=>s+p[0],0)/pairs.length,mb=pairs.reduce((s,p)=>s+p[1],0)/pairs.length;let n=0,da=0,db=0;pairs.forEach(p=>{n+=(p[0]-ma)*(p[1]-mb);da+=(p[0]-ma)**2;db+=(p[1]-mb)**2});return da&&db?n/Math.sqrt(da*db):0};
-    cv=addCard("Numeric Correlation Matrix","Pearson correlation between numeric features (first 12 numeric columns).","statsCorrelationChart",Math.max(320,corrCols.length*34));
-    const canvas=cv,ctx=canvas.getContext("2d"),dpr=window.devicePixelRatio||1,w=canvas.clientWidth,h=canvas.clientHeight;
-    canvas.width=w*dpr;canvas.height=h*dpr;ctx.scale(dpr,dpr);ctx.fillStyle="#0b1728";ctx.fillRect(0,0,w,h);
-    const left=115,top=18,cell=Math.min((w-left-8)/corrCols.length,(h-top-8)/corrCols.length,42);
-    corrCols.forEach((a,i)=>{corrCols.forEach((b,j)=>{const r=corr(a.v,b.v),v=Number.isFinite(r)?r:0;ctx.fillStyle=v>=0?"rgba(40,216,195,"+(0.12+Math.abs(v)*.78)+")":"rgba(255,126,150,"+(0.12+Math.abs(v)*.78)+")";ctx.fillRect(left+j*cell,top+i*cell,cell-2,cell-2);ctx.fillStyle="#eef5ff";ctx.font="10px Inter, sans-serif";ctx.textAlign="center";ctx.fillText(Number.isFinite(r)?r.toFixed(2):"—",left+j*cell+(cell-2)/2,top+i*cell+cell/2+3)});ctx.save();ctx.translate(left-7,top+i*cell+cell/2);ctx.rotate(-.25);ctx.textAlign="right";ctx.fillStyle="#b7c9e2";ctx.font="10px Inter, sans-serif";ctx.fillText(a.h,0,0);ctx.restore();});
+    const corr=(a,b)=>{
+      const n=Math.min(a.length,b.length),pairs=[];
+      for(let i=0;i<n;i++) if(Number.isFinite(a[i])&&Number.isFinite(b[i])) pairs.push([a[i],b[i]]);
+      if(pairs.length<3)return NaN;
+      const ma=pairs.reduce((s,p)=>s+p[0],0)/pairs.length,mb=pairs.reduce((s,p)=>s+p[1],0)/pairs.length;
+      let num=0,da=0,db=0;
+      pairs.forEach(p=>{const x=p[0]-ma,y=p[1]-mb;num+=x*y;da+=x*x;db+=y*y});
+      return da>0&&db>0?num/Math.sqrt(da*db):NaN;
+    };
+    const cellSize=34,left=156,top=116,bottom=18;
+    cv=addCard("Numeric Correlation Matrix","Pearson correlation between numeric features. Teal = positive, pink = negative; values range from −1 to +1.","statsCorrelationChart",top+corrCols.length*cellSize+bottom);
+    const canvas=cv,ctx=canvas.getContext("2d"),dpr=window.devicePixelRatio||1;
+    const w=Math.max(320,canvas.clientWidth),h=top+corrCols.length*cellSize+bottom;
+    canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr);
+    canvas.style.width="100%";canvas.style.height=h+"px";
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    ctx.fillStyle="#0b1728";ctx.fillRect(0,0,w,h);
+    const cell=Math.min(cellSize,(w-left-8)/corrCols.length);
+    const gridWidth=cell*corrCols.length;
+    const x0=left+(w-left-gridWidth)/2;
+    ctx.font="10px Inter, sans-serif";
+    // Rotated column labels, aligned to their cells.
+    corrCols.forEach((col,j)=>{
+      const x=x0+j*cell+cell/2,y=top-8;
+      ctx.save();ctx.translate(x,y);ctx.rotate(-Math.PI/3);
+      ctx.textAlign="left";ctx.textBaseline="middle";ctx.fillStyle="#b7c9e2";
+      ctx.fillText(col.h.length>28?col.h.slice(0,26)+"…":col.h,0,0);
+      ctx.restore();
+    });
+    corrCols.forEach((row,i)=>{
+      ctx.fillStyle="#b7c9e2";ctx.font="10px Inter, sans-serif";ctx.textAlign="right";ctx.textBaseline="middle";
+      const rowLabel=row.h.length>23?row.h.slice(0,21)+"…":row.h;
+      ctx.fillText(rowLabel,x0-9,top+i*cell+cell/2);
+      corrCols.forEach((col,j)=>{
+        const value=corr(row.v,col.v);
+        const v=Number.isFinite(value)?Math.max(-1,Math.min(1,value)):NaN;
+        if(!Number.isFinite(v)){ctx.fillStyle="#26364b";}
+        else if(v>=0){ctx.fillStyle="rgba(40,216,195,"+(0.16+Math.abs(v)*0.78)+")";}
+        else{ctx.fillStyle="rgba(255,126,150,"+(0.16+Math.abs(v)*0.78)+")";}
+        ctx.fillRect(x0+j*cell+1,top+i*cell+1,Math.max(1,cell-2),Math.max(1,cell-2));
+        ctx.fillStyle="#eef5ff";ctx.font="10px Inter, sans-serif";ctx.textAlign="center";ctx.textBaseline="middle";
+        ctx.fillText(Number.isFinite(v)?v.toFixed(2):"—",x0+j*cell+cell/2,top+i*cell+cell/2);
+      });
+    });
   }
   // Top category frequencies for categorical fields (up to 6 fields).
   categorical.slice(0,6).forEach((h,index)=>{
