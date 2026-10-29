@@ -33,7 +33,7 @@
 
       <section id="datasetSection" class="dataset-section" hidden>
         <div class="panel dataset-upload-panel">
-          <div class="panel-head"><div><h2>Historical Dataset Analysis</h2><p>Upload a CSV file to analyze historical latency and server snapshots without changing live monitoring data.</p></div><span class="dataset-badge">CSV · Local analysis</span></div>
+          <div class="panel-head"><div><h2>Historical Dataset Analysis</h2><p>Upload a CSV file to analyze historical latency and server metrics without changing live monitoring data.</p></div><span class="dataset-badge">CSV · Local analysis</span></div>
           <label class="upload-drop" for="datasetFile"><span class="upload-icon">↑</span><strong>Choose a CSV dataset</strong><span>File is processed in your browser and is not uploaded to a server.</span><input id="datasetFile" type="file" accept=".csv,text/csv"></label>
           <div id="datasetControls" class="dataset-controls" hidden>
             <div class="dataset-control"><label for="latencyColumn">Latency / metric column</label><select id="latencyColumn"></select></div>
@@ -48,23 +48,23 @@
         <div id="datasetResults" hidden>
           <section class="panel dataset-upload-panel"><div class="panel-head"><div><h2>All-Feature Statistics</h2><p>Descriptive statistics and data quality for every column in the loaded dataset.</p></div></div><div style="overflow:auto;max-height:560px"><table id="allFeatureStatsTable" style="width:100%;border-collapse:collapse;font-size:11px"><thead><tr><th style="text-align:left;padding:9px">Feature</th><th>Type</th><th>Valid</th><th>Missing</th><th>Unique</th><th>Mean</th><th>Median</th><th>Std dev</th><th>Variance</th><th>Min</th><th>Q1</th><th>Q3</th><th>Max</th><th>Skewness</th><th>Kurtosis</th><th>IQR outliers</th></tr></thead><tbody></tbody></table></div><p class="dataset-message">Numerical statistics are computed per feature using available values. Outliers are flagged, not removed.</p></section>
           <section class="panel dataset-upload-panel" id="llmLatencyPanel" style="margin-bottom:18px">
-            <div class="panel-head"><div><h2>LLM Inference Latency & SLA Tuner</h2><p>Uses the TTFT and TPOT percentile columns actually present in sofie(1).csv. Each row is an aggregated monitoring snapshot, not an individual request.</p></div><span class="dataset-badge">TTFT · TPOT</span></div>
+            <div class="panel-head"><div><h2>LLM Inference Latency & SLA Tuner</h2><p>Uses the TTFT and TPOT percentile columns actually present in sofie(1).csv. Each row is an aggregated monitoring record, not an individual request.</p></div><span class="dataset-badge">TTFT · TPOT</span></div>
             <div class="dataset-controls" style="display:flex">
               <div class="dataset-control"><label for="ttftSlaMs">TTFT P95 limit (ms)</label><input id="ttftSlaMs" type="number" min="0.001" step="any" value="1000"></div>
               <div class="dataset-control"><label for="tpotSlaMs">TPOT P95 limit (ms)</label><input id="tpotSlaMs" type="number" min="0.001" step="any" value="55"></div>
               <button id="runLlmSlaBtn" class="dataset-analyze-btn" type="button">Evaluate TTFT / TPOT</button>
             </div>
             <div class="metrics-grid dataset-metrics-grid" style="margin-top:14px">
-              <div class="metric-card"><div class="metric-label">Mean reported TTFT P50</div><div class="metric-value" id="llmTtftP50">--</div><div class="metric-note">Across available snapshots</div></div>
+              <div class="metric-card"><div class="metric-label">Mean reported TTFT P50</div><div class="metric-value" id="llmTtftP50">--</div><div class="metric-note">Across available records</div></div>
               <div class="metric-card"><div class="metric-label">Mean reported TTFT P95</div><div class="metric-value" id="llmTtftP95">--</div><div class="metric-note">Compared with TTFT limit</div></div>
-              <div class="metric-card"><div class="metric-label">Mean reported TTFT P99</div><div class="metric-value" id="llmTtftP99">--</div><div class="metric-note">Across available snapshots</div></div>
-              <div class="metric-card"><div class="metric-label">Mean reported TPOT P50</div><div class="metric-value" id="llmTpotP50">--</div><div class="metric-note">Across available snapshots</div></div>
+              <div class="metric-card"><div class="metric-label">Mean reported TTFT P99</div><div class="metric-value" id="llmTtftP99">--</div><div class="metric-note">Across available records</div></div>
+              <div class="metric-card"><div class="metric-label">Mean reported TPOT P50</div><div class="metric-value" id="llmTpotP50">--</div><div class="metric-note">Across available records</div></div>
               <div class="metric-card"><div class="metric-label">Mean reported TPOT P95</div><div class="metric-value" id="llmTpotP95">--</div><div class="metric-note">Compared with TPOT limit</div></div>
-              <div class="metric-card"><div class="metric-label">Mean reported TPOT P99</div><div class="metric-value" id="llmTpotP99">--</div><div class="metric-note">Across available snapshots</div></div>
+              <div class="metric-card"><div class="metric-label">Mean reported TPOT P99</div><div class="metric-value" id="llmTpotP99">--</div><div class="metric-note">Across available records</div></div>
             </div>
             <div class="sla-grid" style="margin-top:14px">
-              <div class="sla-card"><span>TTFT P95 snapshot compliance</span><strong id="llmTtftCompliance">--</strong><small id="llmTtftCount">Available snapshots</small></div>
-              <div class="sla-card"><span>TPOT P95 snapshot compliance</span><strong id="llmTpotCompliance">--</strong><small id="llmTpotCount">Available snapshots</small></div>
+              <div class="sla-card"><span>TTFT P95 record compliance</span><strong id="llmTtftCompliance">--</strong><small id="llmTtftCount">Available records</small></div>
+              <div class="sla-card"><span>TPOT P95 record compliance</span><strong id="llmTpotCompliance">--</strong><small id="llmTpotCount">Available records</small></div>
             </div>
             <div class="chart-wrap" style="margin-top:16px"><canvas id="llmLatencyChart"></canvas></div>
             <p id="llmLatencyNote" class="dataset-caveat">Unit handling follows the column suffix “_s” (seconds) and converts displayed values to milliseconds. Verify the dataset documentation before formal reporting.</p>
