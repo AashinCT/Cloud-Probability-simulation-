@@ -69,28 +69,7 @@
             <div class="chart-wrap" style="margin-top:16px"><canvas id="llmLatencyChart"></canvas></div>
             <p id="llmLatencyNote" class="dataset-caveat">Unit handling follows the column suffix “_s” (seconds) and converts displayed values to milliseconds. Verify the dataset documentation before formal reporting.</p>
           </section>
-          <section class="panel dataset-upload-panel" id="llmLatencyPanel" style="margin-bottom:18px">
-            <div class="panel-head"><div><h2>LLM Inference Latency & SLA Tuner</h2><p>Uses TTFT and TPOT percentile columns in sofie(1).csv. Each row is an aggregated monitoring snapshot, not an individual request.</p></div><span class="dataset-badge">TTFT · TPOT</span></div>
-            <div class="dataset-controls" style="display:flex">
-              <div class="dataset-control"><label for="ttftSlaMs">TTFT P95 limit (ms)</label><input id="ttftSlaMs" type="number" min="0.001" step="any" value="1000"></div>
-              <div class="dataset-control"><label for="tpotSlaMs">TPOT P95 limit (ms)</label><input id="tpotSlaMs" type="number" min="0.001" step="any" value="55"></div>
-              <button id="runLlmSlaBtn" class="dataset-analyze-btn" type="button">Evaluate TTFT / TPOT</button>
-            </div>
-            <div class="metrics-grid dataset-metrics-grid" style="margin-top:14px">
-              <div class="metric-card"><div class="metric-label">Mean reported TTFT P50</div><div class="metric-value" id="llmTtft50">--</div><div class="metric-note">Across available snapshots</div></div>
-              <div class="metric-card"><div class="metric-label">Mean reported TTFT P95</div><div class="metric-value" id="llmTtft95">--</div><div class="metric-note">Compared with TTFT limit</div></div>
-              <div class="metric-card"><div class="metric-label">Mean reported TTFT P99</div><div class="metric-value" id="llmTtft99">--</div><div class="metric-note">Across available snapshots</div></div>
-              <div class="metric-card"><div class="metric-label">Mean reported TPOT P50</div><div class="metric-value" id="llmTpot50">--</div><div class="metric-note">Across available snapshots</div></div>
-              <div class="metric-card"><div class="metric-label">Mean reported TPOT P95</div><div class="metric-value" id="llmTpot95">--</div><div class="metric-note">Compared with TPOT limit</div></div>
-              <div class="metric-card"><div class="metric-label">Mean reported TPOT P99</div><div class="metric-value" id="llmTpot99">--</div><div class="metric-note">Across available snapshots</div></div>
-            </div>
-            <div class="sla-grid" style="margin-top:14px">
-              <div class="sla-card"><span>TTFT P95 snapshot compliance</span><strong id="llmTtftCompliance">--</strong><small id="llmTtftCount">Available snapshots</small></div>
-              <div class="sla-card"><span>TPOT P95 snapshot compliance</span><strong id="llmTpotCompliance">--</strong><small id="llmTpotCount">Available snapshots</small></div>
-            </div>
-            <div class="chart-wrap" style="margin-top:16px"><canvas id="llmLatencyChart"></canvas></div>
-            <p id="llmLatencyNote" class="dataset-caveat">Column suffixes indicate seconds; displayed values are converted to milliseconds. Verify units against the dataset documentation before formal reporting.</p>
-          </section>
+          
           <div class="dataset-summary"><span id="datasetRowCount">0 rows</span><span id="datasetColumnLabel">Selected column</span><span id="datasetDataType">Dataset analysis</span></div>
           <section class="metrics-grid dataset-metrics-grid">
             <div class="metric-card"><div class="metric-icon">#</div><div class="metric-label">Valid Values</div><div class="metric-value" id="dsCount">--</div><div class="metric-note">numeric, non-empty rows</div></div>
