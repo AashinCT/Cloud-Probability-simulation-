@@ -153,3 +153,18 @@ The repository contains project documentation, setup instructions, configuration
 ## Author
 **AashinCT**  
 Karunya Institute of Technology and Sciences
+
+## Monitoring Dataset Data Engineering
+
+A separate, reproducible pipeline is available in [`data_analysis/`](data_analysis/README.md) for validating and analyzing timestamped vLLM/gateway monitoring CSV data.
+
+It generates a cleaned timestamp-normalized CSV, missing-value report, numeric descriptive statistics, IQR-based outlier screening, exploratory correlations, latency plots, and a Markdown analysis report.
+
+Run it with:
+
+```bash
+python -m pip install -r requirements-data-analysis.txt
+python data_analysis/run_analysis.py path/to/sofie.csv --out data_analysis/outputs
+```
+
+**Important:** this monitoring dataset contains aggregated interval-level latency percentiles (P50/P95/P99), not individual HTTP request records. Keep it separate from the live collector's request-level measurements. Missing values are preserved and outliers are flagged rather than automatically removed. Confirm metric units against the dataset source documentation before interpreting values as seconds.
