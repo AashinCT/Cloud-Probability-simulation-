@@ -46,6 +46,7 @@
           <p id="datasetCaveat" class="dataset-caveat" hidden></p>
         </div>
         <div id="datasetResults" hidden>
+          <section class="panel dataset-upload-panel"><div class="panel-head"><div><h2>All-Feature Statistics</h2><p>Descriptive statistics and data quality for every column in the loaded dataset.</p></div></div><div style="overflow:auto;max-height:560px"><table id="allFeatureStatsTable" style="width:100%;border-collapse:collapse;font-size:11px"><thead><tr><th style="text-align:left;padding:9px">Feature</th><th>Type</th><th>Valid</th><th>Missing</th><th>Unique</th><th>Mean</th><th>Median</th><th>Std dev</th><th>Variance</th><th>Min</th><th>Q1</th><th>Q3</th><th>Max</th><th>Skewness</th><th>Kurtosis</th><th>IQR outliers</th></tr></thead><tbody></tbody></table></div><p class="dataset-message">Numerical statistics are computed per feature using available values. Outliers are flagged, not removed.</p></section>
           <div class="dataset-summary"><span id="datasetRowCount">0 rows</span><span id="datasetColumnLabel">Selected column</span><span id="datasetDataType">Dataset analysis</span></div>
           <section class="metrics-grid dataset-metrics-grid">
             <div class="metric-card"><div class="metric-icon">#</div><div class="metric-label">Valid Values</div><div class="metric-value" id="dsCount">--</div><div class="metric-note">numeric, non-empty rows</div></div>
