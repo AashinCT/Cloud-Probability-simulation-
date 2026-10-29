@@ -610,6 +610,7 @@ function analyzeDataset(){
   const violations=values.filter(v=>v>threshold).length, compliance=(n-violations)/n*100;
   $("datasetResults").hidden=false;
   renderAdditionalStatisticsGraphs();
+  renderLlmLatencyAnalysis();
   $("datasetRowCount").textContent=datasetRows.length.toLocaleString()+" rows";
   $("datasetColumnLabel").textContent=col+" · "+unit;
   $("datasetDataType").textContent=isRawLatency?"Selected values":"Aggregated percentile snapshots";
