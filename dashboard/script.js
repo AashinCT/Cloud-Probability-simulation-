@@ -683,19 +683,19 @@ function analyzeDataset(){
 let llmLatencyChart=null;
 function renderLlmLatencyAnalysis(){
   const cols=[
-    {key:"ttft50",name:"vllm_ttft_p50_s",label:"TTFT P50"},
-    {key:"ttft95",name:"vllm_ttft_p95_s",label:"TTFT P95"},
-    {key:"ttft99",name:"vllm_ttft_p99_s",label:"TTFT P99"},
-    {key:"tpot50",name:"vllm_time_per_output_token_p50_s",label:"TPOT P50"},
-    {key:"tpot95",name:"vllm_time_per_output_token_p95_s",label:"TPOT P95"},
-    {key:"tpot99",name:"vllm_time_per_output_token_p99_s",label:"TPOT P99"}
+    {key:"ttft50",id:"llmTtftP50",name:"vllm_ttft_p50_s",label:"TTFT P50"},
+    {key:"ttft95",id:"llmTtftP95",name:"vllm_ttft_p95_s",label:"TTFT P95"},
+    {key:"ttft99",id:"llmTtftP99",name:"vllm_ttft_p99_s",label:"TTFT P99"},
+    {key:"tpot50",id:"llmTpotP50",name:"vllm_time_per_output_token_p50_s",label:"TPOT P50"},
+    {key:"tpot95",id:"llmTpotP95",name:"vllm_time_per_output_token_p95_s",label:"TPOT P95"},
+    {key:"tpot99",id:"llmTpotP99",name:"vllm_time_per_output_token_p99_s",label:"TPOT P99"}
   ];
   const existing=cols.filter(c=>datasetHeaders.includes(c.name)), stats={};
   const parse=(row,col)=>{const raw=String(row[col]??"").trim().replace(/,/g,"");if(!raw)return NaN;const n=Number(raw);return Number.isFinite(n)&&n>=0?n:NaN;};
   existing.forEach(c=>{
     const values=datasetRows.map(r=>parse(r,c.name)).filter(Number.isFinite);
     stats[c.key]={...c,values,mean:values.length?values.reduce((a,b)=>a+b,0)/values.length:NaN};
-    const el=$( "llm"+c.key[0].toUpperCase()+c.key.slice(1) );
+    const el=$(c.id);
     if(el)el.textContent=Number.isFinite(stats[c.key].mean)?(stats[c.key].mean*1000).toFixed(2)+" ms":"No data";
   });
   const evaluate=(key,inputId,complianceId,countId)=>{
