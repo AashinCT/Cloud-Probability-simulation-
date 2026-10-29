@@ -321,9 +321,104 @@ $("latencyColumn").addEventListener("change",()=>{$("datasetResults").hidden=tru
 
 // Extra Statistics visualizations: generated from the full dataset, not hard-coded sample values.
 let extraStatsCharts=[];
+function renderDatasetFindings(){
+  const root=$("datasetResults");
+  if(!root || !datasetRows.length || !datasetHeaders.length) return;
+  let section=$("datasetFindingsPanel");
+  if(!section){
+    section=document.createElement("section");
+    section.id="datasetFindingsPanel";
+    section.className="panel";
+    section.style.marginBottom="18px";
+    section.innerHTML='<div class="panel-head"><div><h2>Findings, Interpretation & Recommendations</h2><p>Generated from the currently loaded dataset. Findings are signals to investigate, not proof of cause.</p></div></div><div id="datasetFindingsGrid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px"></div><p id="datasetFindingsCaveat" style="font-size:12px;color:#8fa8ca;margin-top:12px"></p>';
+    root.insertBefore(section,root.firstChild);
+  }
+  const grid=$("datasetFindingsGrid"); grid.innerHTML="";
+  const cards=[];
+  const clean=h=>datasetRows.map(r=>{const x=String(r[h]??"").trim().replace(/,/g,"");return x===""?NaN:Number(x)}).filter(Number.isFinite);
+  const findCol=re=>datasetHeaders.find(h=>re.test(h));
+  const fmt=v=>typeof fmtNumber==="function"?fmtNumber(v):Number(v).toLocaleString(undefined,{maximumFractionDigits:2});
+  const add=(title,finding,interpretation,suggestion)=>{
+    cards.push({title,finding,interpretation,suggestion});
+  };
+  const missing=datasetHeaders.map(h=>({h,n:datasetRows.filter(r=>String(r[h]??"").trim()==="").length}));
+  const totalCells=datasetRows.length*datasetHeaders.length;
+  const missingCount=missing.reduce((a,x)=>a+x.n,0);
+  const worstMissing=[...missing].sort((a,b)=>b.n-a.n).filter(x=>x.n>0).slice(0,3);
+  add("Data completeness",
+    fmt(missingCount)+" of "+fmt(totalCells)+" cells are blank ("+(totalCells?((missingCount/totalCells)*100).toFixed(2):"0")+"%).",
+    worstMissing.length?"Most missing values: "+worstMissing.map(x=>x.h+" ("+x.n+")").join(", ")+".":"No blank cells were found.",
+    worstMissing.length?"Check whether these fields are optional or whether collection/export failed. Avoid replacing missing values with invented measurements.":"Keep checking completeness when new data is loaded.");
+  const pcols=[
+    {label:"P50",h:findCol(/(^|[^a-z0-9])p50([^a-z0-9]|$)|median/i)},
+    {label:"P95",h:findCol(/(^|[^a-z0-9])p95([^a-z0-9]|$)/i)},
+    {label:"P99",h:findCol(/(^|[^a-z0-9])p99([^a-z0-9]|$)/i)}
+  ].filter(x=>x.h);
+  if(pcols.length>=2){
+    const avg=pcols.map(x=>({label:x.label,h:x.h,mean:(()=>{const v=clean(x.h);return v.length?v.reduce((a,b)=>a+b,0)/v.length:NaN})()}));
+    const available=avg.filter(x=>Number.isFinite(x.mean));
+    const p50=available.find(x=>x.label==="P50"), p95=available.find(x=>x.label==="P95"), p99=available.find(x=>x.label==="P99");
+    add("Latency percentile pattern",
+      available.map(x=>"Mean "+x.label+": "+fmt(x.mean)).join(" · "),
+      p50&&p95&&p95.mean>p50.mean?"Reported P95 is higher than P50, indicating a higher-latency tail across the summarized records.":p95&&p50?"P50/P95 averages do not show P95 above P50; check column definitions and data quality.":"Percentile summary columns were found; compare their values and units.",
+      "Inspect timestamps around high P95/P99 records and compare queue time, TTFT, request load and resource metrics. These are averages of reported percentiles, not percentiles recalculated from raw individual requests.");
+  } else {
+    add("Latency percentiles","P50/P95/P99 columns were not confidently identified.","The current file may use different column names or may not contain percentile summaries.","Review the column names and source documentation before drawing latency-tail conclusions.");
+  }
+  const resourceCols=[
+    {label:"CPU",re:/cpu.*(util|usage|percent|pct)|(?:util|usage|percent|pct).*cpu/i},
+    {label:"RAM",re:/ram.*(util|usage|percent|pct)|memory.*(util|usage|percent|pct)|(?:util|usage|percent|pct).*(ram|memory)/i},
+    {label:"GPU",re:/gpu.*(util|usage|percent|pct)|(?:util|usage|percent|pct).*gpu/i}
+  ];
+  const resources=resourceCols.map(x=>({label:x.label,h:findCol(x.re)})).filter(x=>x.h);
+  if(resources.length){
+    const summaries=resources.map(x=>{const v=clean(x.h);return {...x,n:v.length,mean:v.length?v.reduce((a,b)=>a+b,0)/v.length:NaN,median:v.length?percentile(v,.5):NaN,max:v.length?Math.max(...v):NaN};});
+    add("Resource utilization",
+      summaries.map(x=>x.label+": mean "+fmt(x.mean)+(Number.isFinite(x.median)?", median "+fmt(x.median):"")).join(" · "),
+      "These are overall summaries; they do not establish that CPU, RAM or GPU usage caused latency changes.",
+      "Plot resource usage against latency by timestamp and compare high-latency intervals with the rest. Confirm percentage units and metric definitions first.");
+  } else {
+    add("Resource metrics","Recognizable CPU/RAM/GPU utilization columns were not detected by name matching.","Resource pressure cannot be assessed from this automatic summary alone.","Check dataset headers and add explicit mappings for resource fields if they use different names.");
+  }
+  const outlierRows=datasetHeaders.map(h=>{
+    const vals=clean(h).sort((a,b)=>a-b);
+    if(vals.length<4)return null;
+    const q1=percentile(vals,.25),q3=percentile(vals,.75),iqr=q3-q1;
+    const count=vals.filter(v=>v<q1-1.5*iqr||v>q3+1.5*iqr).length;
+    return {h,count,n:vals.length,rate:count/vals.length};
+  }).filter(x=>x&&x.count>0).sort((a,b)=>b.rate-a.rate).slice(0,3);
+  add("Potential outliers",
+    outlierRows.length?outlierRows.map(x=>x.h+": "+x.count+" ("+(x.rate*100).toFixed(2)+"%)").join(" · "):"No IQR outliers detected in the eligible numeric columns.",
+    "IQR flags unusual values relative to each column's spread; a flagged value is not automatically an error or an incident.",
+    outlierRows.length?"Review these records alongside timestamps and related metrics; retain valid extreme observations and correct only verified data errors.":"Re-run this check after loading new data and investigate any unusual latency spikes separately.");
+  const timeCol=findCol(/timestamp|datetime|date.?time|^time$|^date$/i);
+  const queueCol=findCol(/queue.*(time|latency|duration)|(?:time|latency|duration).*queue/i);
+  const ttftCol=findCol(/ttft|time.?to.?first.?token/i);
+  const requestCol=findCol(/request.*(rate|count|throughput)|throughput|requests.?per.?second/i);
+  const factorNames=[queueCol&&"queue time",ttftCol&&"TTFT",requestCol&&"request rate"].filter(Boolean);
+  add("Recommended next analysis",
+    "Timestamp: "+(timeCol||"not detected")+" · Candidate factors: "+(factorNames.join(", ")||"inspect available columns"),
+    "The current summaries describe the dataset overall. They do not prove a root cause or a relationship between variables.",
+    timeCol?"Use timestamped records to compare latency during high- and low-latency intervals, then test associations with "+(factorNames.join(", ")||"available workload/resource metrics")+".":"Identify the time column and align metrics by interval before making claims about trends or causes.");
+  cards.forEach(c=>{
+    const card=document.createElement("article");
+    card.style.cssText="border:1px solid #244365;border-radius:10px;padding:14px;background:rgba(15,35,60,.45)";
+    const heading=document.createElement("h3");heading.textContent=c.title;heading.style.cssText="margin:0 0 8px;font-size:15px;color:#dceaff";
+    card.appendChild(heading);
+    [["Finding",c.finding],["Interpretation",c.interpretation],["Suggestion",c.suggestion]].forEach(([label,value])=>{
+      const p=document.createElement("p");p.style.cssText="margin:7px 0;font-size:12px;line-height:1.55;color:#9fb7da";
+      const strong=document.createElement("strong");strong.textContent=label+": ";strong.style.color="#28d8c3";
+      p.appendChild(strong);p.appendChild(document.createTextNode(value));card.appendChild(p);
+    });
+    grid.appendChild(card);
+  });
+  $("datasetFindingsCaveat").textContent="Important: summaries are calculated from the currently loaded file. Units and metric definitions must be confirmed from the dataset documentation. Aggregated P50/P95/P99 columns are not raw request-level observations, and associations alone do not prove causation.";
+}
+
 function renderAdditionalStatisticsGraphs(){
   const root=$("datasetResults");
   if(!root || !datasetRows.length || !datasetHeaders.length) return;
+  renderDatasetFindings();
   extraStatsCharts.forEach(c=>{try{c.destroy()}catch(e){}});
   extraStatsCharts=[];
   let section=$("additionalStatsGraphs");
