@@ -679,7 +679,7 @@ function analyzeDataset(){
 }
 
 // Dataset-backed TTFT/TPOT analysis. Rows are aggregated monitoring snapshots,
-// not individual requests; this reports snapshot compliance rather than request-level SLA.
+// not individual requests; this reports record compliance rather than request-level SLA.
 let llmLatencyChart=null;
 function renderLlmLatencyAnalysis(){
   const cols=[
@@ -705,14 +705,14 @@ function renderLlmLatencyAnalysis(){
     }
     const within=s.values.filter(v=>v*1000<=limitMs).length;
     $(complianceId).textContent=(within/s.values.length*100).toFixed(2)+"%";
-    $(countId).textContent=within.toLocaleString()+" of "+s.values.length.toLocaleString()+" snapshots at or below "+limitMs+" ms";
+    $(countId).textContent=within.toLocaleString()+" of "+s.values.length.toLocaleString()+" records at or below "+limitMs+" ms";
   };
   evaluate("ttft95","ttftSlaMs","llmTtftCompliance","llmTtftCount");
   evaluate("tpot95","tpotSlaMs","llmTpotCompliance","llmTpotCount");
   const note=$("llmLatencyNote");
   note.textContent=existing.length<6
     ?"Some expected TTFT/TPOT percentile columns are absent. Found: "+(existing.map(c=>c.name).join(", ")||"none")+". Check the CSV header."
-    :"Values are interpreted as seconds from the “_s” suffix and displayed in milliseconds. Compliance is the share of snapshots whose reported P95 is under the configured limit, not request-level SLA compliance. Verify units against source documentation.";
+    :"Values are interpreted as seconds from the “_s” suffix and displayed in milliseconds. Compliance is the share of records whose reported P95 is under the configured limit, not request-level SLA compliance. Verify units against source documentation.";
   if(llmLatencyChart)llmLatencyChart.destroy();
   if(existing.length){
     llmLatencyChart=new Chart($("llmLatencyChart"),{type:"bar",data:{labels:existing.map(c=>c.label),datasets:[{label:"Mean of reported percentile snapshots (ms)",data:existing.map(c=>Number.isFinite(stats[c.key].mean)?stats[c.key].mean*1000:null),backgroundColor:existing.map(c=>c.key.startsWith("ttft")?"#287cff":"#b35cff"),borderRadius:4}]},options:baseChartOptions("Mean reported latency (ms)","Metric")});
