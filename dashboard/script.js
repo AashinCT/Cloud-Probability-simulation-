@@ -429,7 +429,7 @@ async function loadBundledDataset(){
     $("latencyUnit").value=/(_s|seconds?|time.?s)$/i.test(select.value)?"s":"ms";
     $("datasetControls").hidden=false;$("datasetResults").hidden=false;
     $("datasetMessage").textContent="Loaded repository dataset · "+datasetRows.length.toLocaleString()+" rows · "+datasetHeaders.length+" features. Full feature statistics are shown below.";
-    renderAllFeatureStatistics();renderAdditionalStatisticsGraphs();analyzeDataset();
+    renderAllFeatureStatistics();analyzeDataset();
   }catch(err){$("datasetMessage").textContent="Could not load repository dataset automatically: "+err.message+" Check GitHub Pages deployment and data/sofie.csv.";}
 }
 function analyzeDataset(){
@@ -449,6 +449,7 @@ function analyzeDataset(){
   const isRawLatency=!/^(p50|p95|p99|median|percentile)/i.test(col.replace(/[ _-]/g,""));
   const violations=values.filter(v=>v>threshold).length, compliance=(n-violations)/n*100;
   $("datasetResults").hidden=false;
+  renderAdditionalStatisticsGraphs();
   $("datasetRowCount").textContent=datasetRows.length.toLocaleString()+" rows";
   $("datasetColumnLabel").textContent=col+" · "+unit;
   $("datasetDataType").textContent=isRawLatency?"Selected values":"Aggregated percentile snapshots";
